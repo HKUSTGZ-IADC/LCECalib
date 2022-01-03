@@ -1,0 +1,20 @@
+figure;
+title("Rotation Error between Two Cameras",'FontName','Times New Roman');
+hold on;
+load("simu_data/noise-0.007-result.mat");
+plot(mean(aver_theta,1),'.-b');
+hold on;
+plot(median(aver_theta,1),'.--b');
+ylabel("Rotation Error(Degree)",'FontName','Times New Roman');
+xlabel("The number of poses",'fontname','times new roman');
+legend("mean:\sigma_C=0.007","median:\sigma_C=0.007",'FontName','Times New Roman');
+figure;
+title("Translation Error between Two Cameras",'FontName','Times New Roman')
+hold on;
+load("simu_data/noise-0.007-result.mat");
+plot(mean(aver_t_err,1),'.-b');
+hold on;
+plot(median(aver_t_err,1),'.--b');
+ylabel("Translation Error(Meter)",'FontName','Times New Roman');
+xlabel("The number of poses",'FontName','Times New Roman');
+legend("mean:\sigma_C=0.007","median:\sigma_C=0.007",'FontName','Times New Roman');
