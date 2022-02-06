@@ -95,9 +95,43 @@ save('real_data/real_data_9/params.mat', 'K', 'D', 'borH', 'borW', 'numH', 'numW
 % save('real_data/real_data_5/params.mat', 'K', 'D', 'borH', 'borW', 'pattern_size', 'squareSize', ...
 %   'checkerboardPadding', 'TGt', 'num_data', 'imageWidth', 'imageHeight');
              
+%% hkust handheld device: frame_cam00 20220205
+K = [591.807, 0, 525.959;
+     0, 592.474, 400.945;
+     0, 0, 1];
+D = [-0.10421, 0.11108, 0.0013736, 0.0019614, -0.024949];
+borH = 0.6;
+borW = 0.8;
+numH = 7;
+numW = 10;
+pattern_size = 0.068;
+TGt = eye(4);
+squareSize = 68;
+checkerboardPadding = [120, 124];
+num_data = 30;
+imageWidth = 1024;
+imageHeight = 768;
+save('handheld_data/real_data_1/frame_img/params.mat', 'K', 'D', 'borH', 'borW', 'numH', 'numW', 'pattern_size', 'squareSize', ...
+  'checkerboardPadding', 'TGt', 'num_data', 'imageWidth', 'imageHeight');
              
-             
-
+%% hkust handheld device: event_cam00 20220205
+K = [290.948, 0, 161.333;
+     0, 291.063, 137.320;
+     0, 0, 1];
+D = [-0.40888, 0.3196, -0.00017919, 0.00021932, -0.25143];
+borH = 0.6;
+borW = 0.8;
+numH = 7;
+numW = 10;
+pattern_size = 0.068;
+TGt = eye(4);
+squareSize = 68;
+checkerboardPadding = [120, 124];
+num_data = 30;
+imageWidth = 346;
+imageHeight = 260;
+save('handheld_data/real_data_1/event_img/params.mat', 'K', 'D', 'borH', 'borW', 'numH', 'numW', 'pattern_size', 'squareSize', ...
+  'checkerboardPadding', 'TGt', 'num_data', 'imageWidth', 'imageHeight');
 
 
 
