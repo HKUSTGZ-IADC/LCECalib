@@ -40,8 +40,12 @@ pts_valid(3,idx) = 20;
 idx = find(pts_valid(3,:)<1);
 pts_valid(3,idx) = 1;
 for index = 1: size(pro_pt,2)
-    pts_x = [-1,-1,-1,0,0,0,1,1,1];
-    pts_y = [-1,0,1,-1,0,1,-1,0,1];
+%     pts_x = [-1,-1,-1,0,0,0,1,1,1];
+%     pts_y = [-1,0,1,-1,0,1,-1,0,1];
+%     pts_x = [-1, 0, 1, 0, 0];
+%     pts_y = [0, 0, 0, -1, 1];
+    pts_x = [0];
+    pts_y = [0];
     pixel_xy = [pts_x;pts_y];
     pixel_xy = pixel_xy + pro_pt(:,index);
 %     pixel_xy = pro_pt(:,index);
@@ -49,7 +53,6 @@ for index = 1: size(pro_pt,2)
     if nargin==4
         if pro_pt(2,index) == size(img_rgb,1) || pro_pt(2,index)<2 || pro_pt(1,index) == size(img_rgb,2) || pro_pt(1,index)<2
             img_out(pro_pt(2,index),pro_pt(1,index),:) = map(round(pts_valid(3,index)),:)';
-            
         else
             for idx = 1: size(pixel_xy,2)
                 img_out(pixel_xy(2,idx),pixel_xy(1,idx),:) = map(round(pts_valid(3,index)),1:length(img_out(pixel_xy(2,idx),pixel_xy(1,idx),:)))';

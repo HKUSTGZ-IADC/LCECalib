@@ -108,7 +108,7 @@ pattern_size = 0.068;
 TGt = eye(4);
 squareSize = 68;
 checkerboardPadding = [120, 124];
-num_data = 30;
+num_data = 35;
 imageWidth = 1024;
 imageHeight = 768;
 save('handheld_data/real_data_1/frame_img/params.mat', 'K', 'D', 'borH', 'borW', 'numH', 'numW', 'pattern_size', 'squareSize', ...
@@ -127,7 +127,7 @@ pattern_size = 0.068;
 TGt = eye(4);
 squareSize = 68;
 checkerboardPadding = [120, 124];
-num_data = 30;
+num_data = 35;
 imageWidth = 346;
 imageHeight = 260;
 save('handheld_data/real_data_1/event_img/params.mat', 'K', 'D', 'borH', 'borW', 'numH', 'numW', 'pattern_size', 'squareSize', ...
