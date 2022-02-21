@@ -4,7 +4,11 @@ function img_undist= myundistortImage(img_in, K, D)
 % D为径向畸变参数，给定的
 
 IntrinsicMatrix = K';
-radialDistortion = [D(1),D(2),D(5)];
+if length(D) == 4
+  radialDistortion = [D(1),D(2)];
+else
+  radialDistortion = [D(1),D(2),D(5)];
+end
 tangentialDist = [D(3),D(4)];
 imageSize = [size(img_in,1),size(img_in,2)];
 principalPoint =[K(1,3),K(2,3)];
