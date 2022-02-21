@@ -1,7 +1,11 @@
 function [pts_corner,plane_coeff,aver_err] = imgbor_ext(img,K,D,pattern_size,borW,borH,isdisplay)
 
 IntrinsicMatrix = K';
-radialDistortion = [D(1),D(2),D(5)];
+if (length(D) == 4)
+  radialDistortion = [D(1),D(2)];
+else
+  radialDistortion = [D(1),D(2),D(5)];
+end
 tangentialDist = [D(3),D(4)];
 principalPoint =[K(1,3),K(2,3)];
 cam_param = cameraParameters('IntrinsicMatrix',IntrinsicMatrix,'RadialDistortion',...
