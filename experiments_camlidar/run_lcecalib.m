@@ -77,7 +77,8 @@ for data_option = 1:6
       pts_corner = [[borW/2,borH/2,0]', [borW/2,-borH/2,0]',...
                     [-borW/2,-borH/2,0]', [-borW/2,borH/2,0]'];
       pts_corner = center' + pts_corner;
-      pc_corner_px = worldpts_to_cam(pts_corner, T(1:3, 1:3), T(1:3, 4), K);
+      pts_corner = T(1:3, 1:3) * pts_corner + T(1:3, 4);
+      pc_corner_px = worldpts_to_cam(pts_corner, eye(3, 3), zeros(3, 1), K);
       pc_corner_px(:, size(pc_corner_px, 2) + 1) = pc_corner_px(:, 1);
       plane_coeff = T(1:3,1:3) * [0,0,1]';
       d = -plane_coeff'*T(1:3,4);
@@ -101,6 +102,8 @@ for data_option = 1:6
       
 %       [im_corners, cam_plane_coeff, pro_err] = ...
 %         imgbor_ext(img_raw, K, D, pattern_size, borW, borH, visualization_flag);
+%       im_corners
+%       cam_plane_coeff'
 
       [pts_bor, bor_coeff, err] = boardpts_ext(pc_array, borW, borH);
       if (isempty(pts_bor))
