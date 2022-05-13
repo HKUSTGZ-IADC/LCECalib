@@ -18,8 +18,19 @@
 %               https://ram-lab.com
 %
 %
-% test_cov_pTop.m: The globally optimal solution and covariance estimation
-%                  of point-to-plane registration problem
+% qpep_pTop.m: The globally optimal solution and covariance estimation
+%              of point-to-plane registration problem
+% input: 
+%   r0  (Nx3): target point cloud to be transformed 
+%   nvr (Nx3): normal of the target point cloud
+%   b0  (Nx3): reference point cloud 
+%   nvb (Nx3): normal of the target point cloud
+%   plot_flag: plot figures (true)
+% output:
+%   Rest     : estimated rotation matrix 
+%   test     : estimated translation vector (Rest * r0 + test = b0)
+%   covR     : covariance matrix of quaternion
+%   covt     : covariance matrix of translation
 
 function [Rest, test, covR, covt] = qpep_pTop(r0, nvr, b0, nvb, plot_flag)
 

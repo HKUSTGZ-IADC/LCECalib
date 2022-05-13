@@ -18,12 +18,19 @@
 %               https://ram-lab.com
 %
 %
-% test_cov_pnp.m: The globally optimal solution and covariance estimation
-%                  of the PnP problem
-
-% clear all
-% close all
-% clc
+% qpep_pnp.m: The globally optimal solution and covariance estimation
+%             of the PnP problem
+% input: 
+%   image_pt0  (Nx2): 2D points in an image to be transformed
+%   world_pt0  (Nx3): 3D points in the world
+%   K          (3x3): intrinsic camera matrix
+%   plot_flag: plot figures (true)
+% output:
+%   Rest     : estimated rotation matrix 
+%   test     : estimated translation vector 
+%                   (K * (Rest * image_pt0 + test) = world_pt0)
+%   covR     : covariance matrix of quaternion
+%   covt     : covariance matrix of translation
 
 function [Rest, test, covR, covt] = qpep_pnp(image_pt0, world_pt0, K, plot_flag)
 
