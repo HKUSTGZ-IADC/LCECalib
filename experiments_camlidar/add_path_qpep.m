@@ -1,6 +1,6 @@
 function [] = add_path_qpep()
   warning('off');
-  format long g
+  format long
 
   libQPEP_dir = '../../LibQPEP/MATLAB';
   addpath(fullfile(libQPEP_dir, 'func_files'));

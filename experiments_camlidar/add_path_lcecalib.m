@@ -7,4 +7,5 @@ function [] = add_path_lcecalib()
   addpath("../tools/board_extraction");
   
   addpath('eval');
+  addpath('tools');
 end

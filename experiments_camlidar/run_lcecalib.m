@@ -3,8 +3,11 @@ clc; clear; close all;
 add_path_lcecalib;
 add_path_qpep;
 
+format short
+
 data_type = 'real_data';
 visualization_flag = 1;
+debug_flag = 1;
 
 %% load data and extract features
 for data_option = 1:6
@@ -32,23 +35,72 @@ for data_option = 1:6
   pcd_corner3D = {};
   pc_bors_ceoff = {}; 
   cam_bors_coeff = {};
-  for idx = 1:min(5, num_data)
+  for idx = 1:min(25, num_data)
       img_file = strcat(img_list(idx).folder, '/', img_list(idx).name);
       pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
       img_raw = imread(img_file);
       pc_raw = pcread(pcd_file);
       pc_array = pc_raw.Location()';
-
-      [imagePoints, boardSize] = detectCheckerboardPoints(img_raw);
+      
+      %% image: feature extraction
+      [img_undist, camParams] = undistort_image(img_raw, K, D);
+      [imagePoints, boardSize] = detectCheckerboardPoints(img_undist);
       if (boardSize(1) == 0 || boardSize(2) == 0)
         continue;
       end
       if (boardSize(1) < numH || boardSize(2) < numW)
         continue;
-      end      
+      end     
       
-      [im_corners, cam_plane_coeff, pro_err] = ...
-        imgbor_ext(img_raw, K, D, pattern_size, borW, borH, visualization_flag);
+      worldPoints = generateCheckerboardPoints(boardSize, pattern_size);
+      worldPoints = [worldPoints, zeros(size(worldPoints,1),1)];
+
+%       Compared with MATLAB baseline
+%       [worldOrientation, worldLocation] = ...
+%         estimateWorldCameraPose(imagePoints, worldPoints, camParams);
+%       T= [[worldOrientation;worldLocation],[0,0,0,1]'];
+%       T = T';
+%       T = inv(T);
+%       T
+%       worldPx=T(1:3,1:3)*worldPoints'+T(1:3,4);
+%       worldPx = K * worldPx;
+%       worldPx = worldPx(1:2,:)./worldPx(3,:);
+%       imagePoints= imagePoints';
+
+      [R_cam_board, t_cam_board, ~, ~] = ...
+        qpep_pnp(imagePoints, worldPoints, K', false, false);
+      R_cam_board = R_cam_board'; 
+      T = [R_cam_board, t_cam_board; 0 0 0 1];
+      
+      % estimate checkerboard corners
+      center = mean(worldPoints,1);
+      pts_corner = [[borW/2,borH/2,0]', [borW/2,-borH/2,0]',...
+                    [-borW/2,-borH/2,0]', [-borW/2,borH/2,0]'];
+      pts_corner = center' + pts_corner;
+      pc_corner_px = worldpts_to_cam(pts_corner, T(1:3, 1:3), T(1:3, 4), K);
+      pc_corner_px(:, size(pc_corner_px, 2) + 1) = pc_corner_px(:, 1);
+      plane_coeff = T(1:3,1:3) * [0,0,1]';
+      d = -plane_coeff'*T(1:3,4);
+      plane_coeff = [plane_coeff;d];
+      if d<0
+          plane_coeff =-plane_coeff;
+      end     
+      worldPx = worldpts_to_cam(worldPoints', T(1:3, 1:3), T(1:3, 4), K);
+      if debug_flag
+        figure; 
+        subplot(121); imshow(img_raw);
+        subplot(122); imshow(img_undist);
+        hold on;
+        plot(worldPx(1,:),worldPx(2,:),'.r');
+        plot(pc_corner_px(1,:), pc_corner_px(2,:),'-ob');
+        hold off;
+      end
+      
+      im_corners = pts_corner;
+      cam_plane_coeff = plane_coeff;
+      
+%       [im_corners, cam_plane_coeff, pro_err] = ...
+%         imgbor_ext(img_raw, K, D, pattern_size, borW, borH, visualization_flag);
 
       [pts_bor, bor_coeff, err] = boardpts_ext(pc_array, borW, borH);
       if (isempty(pts_bor))
@@ -75,7 +127,8 @@ for data_option = 1:6
   aver_r_err = [];
   TOptm_best = eye(4, 4);
   min_t = 1000;
-  for PoseNum = 1:length(cam_bors_coeff) - 1
+%   for PoseNum = 1:length(cam_bors_coeff) - 1
+  for PoseNum = length(cam_bors_coeff) - 1
       multi_theta_errs=[];
       t_errs = [];    
       for iter = 1:all_iterations    

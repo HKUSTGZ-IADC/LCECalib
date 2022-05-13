@@ -250,8 +250,8 @@ if comp_cov
   covt = Sigma_t_stat;
 else
   covR = zeros(4, 4);
-  covt = zeros(3, 3);
-end
+  covt = zeros(
+
 end
 
 
