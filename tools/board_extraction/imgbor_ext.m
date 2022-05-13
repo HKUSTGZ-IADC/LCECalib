@@ -1,4 +1,5 @@
-function [pts_corner,plane_coeff,aver_err] = imgbor_ext(img,K,D,pattern_size,borW,borH,isdisplay)
+function [pts_corner,plane_coeff,aver_err] = ...
+  imgbor_ext(img,K,D,pattern_size,borW,borH,isdisplay)
 
 IntrinsicMatrix = K';
 if (length(D) == 4)

@@ -20,8 +20,10 @@ idx = find(pts_in_norm<search_radius);
 pts_in = pts_raw_in(:, idx);
 
 %% main program
-if (size(pts_in, 2) == 3)
-  %% extract ring points
+% ===================================================
+% not use ring information
+if (size(pts_in, 1) == 3)
+  % extract ring points
   thetaAlpha = [[],[]];
   for index = 1: size(pts_in,2)
       R = norm(pts_in(:,index));
@@ -33,18 +35,18 @@ if (size(pts_in, 2) == 3)
   end
   pts_in = [pts_in;thetaAlpha];
 
-  %% find line segment from each line and filer impossible line segment.
+  % find line segment from each line and filer impossible line segment.
   pts_potional = [];
   for angle = -15:2:15
       thetaidx = find(pts_in(4,:)==angle);
       same_ring_pts = pts_in(:,thetaidx);
       [B,sorted_idx] = sort(same_ring_pts(5,:));
-      sorted_ring_pts =  same_ring_pts(1:3,sorted_idx);
+      sorted_ring_pts =  same_ring_pts(1:4, sorted_idx);
       clusters_pts=[];
       offset=1;
       for index = 1:size(sorted_ring_pts,2)-1
-          d_pp = norm(sorted_ring_pts(:,index+1)-sorted_ring_pts(:,index));
-          if d_pp<discontinuity_thres && index~=(size(sorted_ring_pts,2)-1)
+          d_pp = norm(sorted_ring_pts(1:3, index+1) - sorted_ring_pts(1:3, index));
+          if d_pp<discontinuity_thres && index~=(size(sorted_ring_pts, 2)-1)
               continue;
           else
               offset = index+1;
@@ -71,7 +73,7 @@ if (size(pts_in, 2) == 3)
              valid_idx_plus = size_pts; 
           end
           valid_idx_plus = int32(valid_idx_plus);
-          d_pp = norm(sorted_ring_pts(:,valid_idx_plus)-sorted_ring_pts(:,valid_idx));
+          d_pp = norm(sorted_ring_pts(1:3,valid_idx_plus) - sorted_ring_pts(1:3,valid_idx));
 
           if d_pp<discontinuity_thres && index~=(size_pts+offset-1)
               clusters_pts = [clusters_pts,sorted_ring_pts(:,valid_idx)];
@@ -90,10 +92,10 @@ if (size(pts_in, 2) == 3)
           end
       end
   end
- 
+% ===================================================
 % using ring information
 else
-  %% extract ring points
+  % extract ring points
   Alpha = [];
   for index = 1: size(pts_in, 2)
       R = norm(pts_in(:,index));
@@ -103,7 +105,7 @@ else
   end
   pts_in = [pts_in; Alpha];  % pts: 5xN matrix
 
-  %% find line segment from each line and filer impossible line segment.
+  % find line segment from each line and filer impossible line segment.
   minRing = min(pts_in(4, :));
   maxRing = max(pts_in(4, :));
   pts_potional = [];
@@ -177,7 +179,6 @@ for sample_step = 1:template_rate-1
     template_pts = [template_pts,new_sample_pts];
 end
 
-
 %% dbscan to cluster
 if (isempty(pts_potional))
   pts_out = [];
@@ -189,8 +190,8 @@ idx = dbscan(pts_potional(1:3, :)', dbscan_elpson, 10);
 
 %% find board from each cluster using icp
 min_err = 100;
-min_cluster=[];
-min_transform=[];
+min_cluster = [];  % (4xN)
+min_transform = [];
 
 for idx_ele = 1: max(idx)
     idx_part = find(idx==idx_ele);

@@ -17,9 +17,7 @@ if(~verLessThan('matlab', '8.0.0'))
 end
 p = genpath(fullfile(libQPEP_dir, 'YALMIP'));
 addpath(p);
-
 addpath('qpep_api');
-addpath('eval');
 
 %% generate testing data
 load realsense-calib
