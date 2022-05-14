@@ -20,163 +20,102 @@ idx = find(pts_in_norm<search_radius);
 pts_in = pts_raw_in(:, idx);
 
 %% main program
-% ===================================================
-% not use ring information
-if (size(pts_in, 1) == 3)
-  % extract ring points
-  thetaAlpha = [[],[]];
-  for index = 1: size(pts_in,2)
-      R = norm(pts_in(:,index));
-      z = pts_in(3,index);
+% ======= extract ring information
+if (size(pts_in, 1) == 3) % not use ring information
+  thetaAlpha = zeros(2, size(pts_in, 2));
+  for index = 1:size(pts_in, 2)
+      R = norm(pts_in(:, index));
+      z = pts_in(3, index);
       theta = round(asind(z/R));
-      alpha = atan2d(pts_in(2,index),pts_in(1,index))+180;
-
-      thetaAlpha = [thetaAlpha,[theta;alpha]];
+      alpha = atan2d(pts_in(2,index), pts_in(1,index))+180;
+      thetaAlpha(:, index) = [theta; alpha];
   end
-  pts_in = [pts_in;thetaAlpha];
-
-  % find line segment from each line and filer impossible line segment.
-  pts_potional = [];
-  for angle = -15:2:15
-      thetaidx = find(pts_in(4,:)==angle);
-      same_ring_pts = pts_in(:,thetaidx);
-      [B,sorted_idx] = sort(same_ring_pts(5,:));
-      sorted_ring_pts =  same_ring_pts(1:4, sorted_idx);
-      clusters_pts=[];
-      offset=1;
-      for index = 1:size(sorted_ring_pts,2)-1
-          d_pp = norm(sorted_ring_pts(1:3, index+1) - sorted_ring_pts(1:3, index));
-          if d_pp<discontinuity_thres && index~=(size(sorted_ring_pts, 2)-1)
-              continue;
-          else
-              offset = index+1;
-              break;
-          end
-      end
-      clusters_pts=[];
-      size_pts = size(sorted_ring_pts,2);
-      for index = offset:size_pts+offset-1
-          if index > size(sorted_ring_pts,2)
-              valid_idx = mod(index,size_pts);
-          else
-              valid_idx = index;
-          end
-          if valid_idx==0
-              valid_idx=size_pts;
-          end
-          valid_idx = int32(valid_idx);
-          valid_idx_plus = index+1;
-          if valid_idx_plus > size_pts
-              valid_idx_plus = mod(valid_idx_plus,size_pts);
-          end
-          if valid_idx_plus==0
-             valid_idx_plus = size_pts; 
-          end
-          valid_idx_plus = int32(valid_idx_plus);
-          d_pp = norm(sorted_ring_pts(1:3,valid_idx_plus) - sorted_ring_pts(1:3,valid_idx));
-
-          if d_pp<discontinuity_thres && index~=(size_pts+offset-1)
-              clusters_pts = [clusters_pts,sorted_ring_pts(:,valid_idx)];
-          else
-              clusters_pts =[clusters_pts,sorted_ring_pts(:,valid_idx)];
-              dis = norm(clusters_pts(:,1) - clusters_pts(:,end));
-
-              if size(clusters_pts,2)>15 && dis<line_maxlen
-                  [coeff,score,latent]=pca(clusters_pts');
-                  alpha1d = (latent(1)-latent(2))/latent(1);
-                  if alpha1d>eigen_thres
-                      pts_potional = [pts_potional,clusters_pts];
-                  end
-              end
-              clusters_pts = [];
-          end
-      end
-  end
-% ===================================================
-% using ring information
-else
-  % extract ring points
-  Alpha = [];
-  for index = 1: size(pts_in, 2)
-      R = norm(pts_in(:,index));
-      z = pts_in(3,index);
+  pts_in = [pts_in; thetaAlpha];
+  % TODO: currently, this method can only support 16-beam LiDAR
+  minRange = -15.0;  % minimum angle
+  maxRange = 15.0;  % maximum angle
+  intRange = 2.0; 
+else % extract ring points
+  Alpha = zeros(1, size(pts_in, 2));
+  for index = 1:size(pts_in, 2)
+      R = norm(pts_in(:, index));
+      z = pts_in(3, index);
       alpha = atan2d(pts_in(2,index), pts_in(1,index)) + 180;
-      Alpha = [Alpha, alpha];
+      Alpha(index, 1) = alpha;
   end
   pts_in = [pts_in; Alpha];  % pts: 5xN matrix
+  minRange = min(pts_in(4, :));  % minimum ring
+  maxRange = max(pts_in(4, :));  % maximum ring
+  intRange = 1;
+end
 
-  % find line segment from each line and filer impossible line segment.
-  minRing = min(pts_in(4, :));
-  maxRing = max(pts_in(4, :));
-  pts_potional = [];
-  for ring = minRing:maxRing
-      ringidx = find(pts_in(4, :) == ring);
-      same_ring_pts = pts_in(:, ringidx);
-      [B, sorted_idx] = sort(same_ring_pts(5, :));
-      sorted_ring_pts =  same_ring_pts(1:4, sorted_idx);
-      clusters_pts = [];
-      offset = 1;
-      for index = 1:size(sorted_ring_pts,2)-1
-          d_pp = norm(sorted_ring_pts(1:3, index+1) - sorted_ring_pts(1:3, index));
-          if d_pp < discontinuity_thres && index ~= (size(sorted_ring_pts,2)-1)
-              continue;
-          else
-              offset = index+1;
-              break;
-          end
+% ======= preprocess point cloud
+pts_potional = [];
+for angle = minRange:intRange:maxRange
+  thetaidx = find(pts_in(4,:) == angle);
+  same_ring_pts = pts_in(:, thetaidx);
+  [B, sorted_idx] = sort(same_ring_pts(5,:));
+  sorted_ring_pts =  same_ring_pts(1:4, sorted_idx);
+  offset = 1;
+  for index = 1:size(sorted_ring_pts,2)-1
+      d_pp = norm(sorted_ring_pts(1:3, index+1) - sorted_ring_pts(1:3, index));
+      if d_pp<discontinuity_thres && index~=(size(sorted_ring_pts, 2)-1)
+          continue;
+      else
+          offset = index+1;
+          break;
       end
-      clusters_pts = [];
-      size_pts = size(sorted_ring_pts, 2);
-      for index = offset:size_pts+offset-1
-          if index > size(sorted_ring_pts,2)
-              valid_idx = mod(index,size_pts);
-          else
-              valid_idx = index;
-          end
-          if valid_idx==0
-              valid_idx=size_pts;
-          end
-          valid_idx = int32(valid_idx);
-          valid_idx_plus = index+1;
-          if valid_idx_plus > size_pts
-              valid_idx_plus = mod(valid_idx_plus,size_pts);
-          end
-          if valid_idx_plus==0
-             valid_idx_plus = size_pts; 
-          end
-          valid_idx_plus = int32(valid_idx_plus);
-          d_pp = norm(sorted_ring_pts(1:3, valid_idx_plus) - sorted_ring_pts(1:3, valid_idx));
+  end
+  clusters_pts = [];
+  size_pts = size(sorted_ring_pts,2);
+  for index = offset:size_pts+offset-1
+      if index > size(sorted_ring_pts,2)
+          valid_idx = mod(index,size_pts);
+      else
+          valid_idx = index;
+      end
+      if valid_idx==0
+          valid_idx=size_pts;
+      end
+      valid_idx = int32(valid_idx);
+      valid_idx_plus = index+1;
+      if valid_idx_plus > size_pts
+          valid_idx_plus = mod(valid_idx_plus,size_pts);
+      end
+      if valid_idx_plus==0
+         valid_idx_plus = size_pts; 
+      end
+      valid_idx_plus = int32(valid_idx_plus);
+      d_pp = norm(sorted_ring_pts(1:3,valid_idx_plus) - sorted_ring_pts(1:3,valid_idx));
 
-          if d_pp<discontinuity_thres && index~=(size_pts+offset-1)
-              clusters_pts = [clusters_pts, sorted_ring_pts(:,valid_idx)];
-          else
-              clusters_pts = [clusters_pts,sorted_ring_pts(:,valid_idx)];
-              dis = norm(clusters_pts(:,1) - clusters_pts(:,end));
+      if d_pp<discontinuity_thres && index~=(size_pts+offset-1)
+          clusters_pts = [clusters_pts,sorted_ring_pts(:,valid_idx)];
+      else
+          clusters_pts =[clusters_pts,sorted_ring_pts(:,valid_idx)];
+          dis = norm(clusters_pts(:,1) - clusters_pts(:,end));
 
-              if size(clusters_pts,2) > 15 && dis < line_maxlen
-                  [coeff, score, latent] = pca(clusters_pts(1:3, :)');
-                  alpha1d = (latent(1)-latent(2))/latent(1);
-                  if alpha1d>eigen_thres
-                      pts_potional = [pts_potional, clusters_pts];
-                  end
+          if size(clusters_pts,2)>15 && dis<line_maxlen
+              [coeff,score,latent]=pca(clusters_pts');
+              alpha1d = (latent(1)-latent(2))/latent(1);
+              if alpha1d>eigen_thres
+                  pts_potional = [pts_potional,clusters_pts];
               end
-              clusters_pts = [];
           end
+          clusters_pts = [];
       end
   end
 end
 
 %% generate template board board points in board coordinate system
 bor_corners = [[0;0;0],[0;borH;0],[borW;borH;0],[borW;0;0]];
-
 x = linspace(bor_corners(1,1),bor_corners(1,2),template_rate);
 y = linspace(bor_corners(2,1),bor_corners(2,2),template_rate);
 z = linspace(bor_corners(3,1),bor_corners(3,2),template_rate);
 template_pts = [x;y;z];
 sample_vec = (bor_corners(:,3) - bor_corners(:,2))./(template_rate-1);
 for sample_step = 1:template_rate-1
-    new_sample_pts = [x;y;z] + sample_vec*sample_step;
-    template_pts = [template_pts,new_sample_pts];
+  new_sample_pts = [x;y;z] + sample_vec*sample_step;
+  template_pts = [template_pts,new_sample_pts];
 end
 
 %% dbscan to cluster
@@ -194,22 +133,22 @@ min_cluster = [];  % (4xN)
 min_transform = [];
 
 for idx_ele = 1: max(idx)
-    idx_part = find(idx==idx_ele);
-    pts_cluster = pts_potional(:, idx_part);
-    T = bor_icp(pts_cluster(1:3, :), template_pts);
-    ptCloudIn = pointCloud(pts_cluster(1:3, :)');
-    ptCloudOut = pcdownsample(ptCloudIn, 'gridAverage', 0.05);
-    err = match_error(template_pts,ptCloudOut.Location()',T);
-    
-    R = vecnorm(pts_cluster(1:3, :));
-    z = pts_cluster(3, :);
-    thetas = round(asind(z./R));
-    thetas = unique(thetas);
-    if err<min_err && size(thetas,2)>3
-        min_err = err;
-        min_cluster = pts_cluster;
-        min_transform= T;
-    end
+  idx_part = find(idx==idx_ele);
+  pts_cluster = pts_potional(:, idx_part);
+  T = bor_icp(pts_cluster(1:3, :), template_pts);
+  ptCloudIn = pointCloud(pts_cluster(1:3, :)');
+  ptCloudOut = pcdownsample(ptCloudIn, 'gridAverage', 0.05);
+  err = match_error(template_pts,ptCloudOut.Location()',T);
+
+  R = vecnorm(pts_cluster(1:3, :));
+  z = pts_cluster(3, :);
+  thetas = round(asind(z./R));
+  thetas = unique(thetas);
+  if err<min_err && size(thetas,2)>3
+    min_err = err;
+    min_cluster = pts_cluster;
+    min_transform= T;
+  end
 end
 
 %% return check
@@ -227,18 +166,17 @@ end
 ns = KDTreeSearcher(pts_in(1:3,:)');
 idx = rangesearch(ns, min_cluster(1:3, :)', borH/2);
 for index = 1:size(idx,1)
-    candi_pts = pts_in(1:4, idx{index});  % pts_in(1:4, :): x, y, z, ring
-    diss = Plane3dVal(model, candi_pts(1:3, :)');
-    idxx = find(diss < maxdistance);
-    candi_pts = candi_pts(:, idxx);
-    idx_mem = ismember(candi_pts(1:3, :)', min_cluster(1:3, :)', 'row');
-    candi_pts = candi_pts(:, ~idx_mem);
-    min_cluster = [min_cluster, candi_pts];
+  candi_pts = pts_in(1:4, idx{index});  % pts_in(1:4, :): x, y, z, ring
+  diss = Plane3dVal(model, candi_pts(1:3, :)');
+  idxx = find(diss < maxdistance);
+  candi_pts = candi_pts(:, idxx);
+  idx_mem = ismember(candi_pts(1:3, :)', min_cluster(1:3, :)', 'row');
+  candi_pts = candi_pts(:, ~idx_mem);
+  min_cluster = [min_cluster, candi_pts];
 end
 
 % use dbscan to remove outliers
 idx = dbscan(min_cluster(1:3, :)',0.18,10);
-
 idx_max = 0 ;
 max_size = 0;
 for idx_num = 1: max(idx)
@@ -263,7 +201,7 @@ if min_err > min_err_thres
     plane_model = [];
 else
     pts_out = min_cluster;
-    pts_in_ele_normal = -pinv(pts_out') * ones(size(pts_out,2),1);
+    pts_in_ele_normal = -pinv(pts_out(1:3, :)') * ones(size(pts_out, 2),1);
     plane_model = [pts_in_ele_normal;1];
     plane_model = plane_model ./norm(pts_in_ele_normal );
 end

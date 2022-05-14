@@ -191,10 +191,6 @@ for data_option = 1:6
       Test = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
-      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      % Refinement
-      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      
       [r_err, t_err] = evaluateTFError(TGt, Test);
       r_errs(iter) = r_err;
       t_errs(iter) = t_err;

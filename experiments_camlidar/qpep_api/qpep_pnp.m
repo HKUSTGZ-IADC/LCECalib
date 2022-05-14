@@ -64,7 +64,7 @@ end
                           @eq_pnp_func_new, @Jacob_pnp_func_new, t_funcs, ...
                           coef_f_q_sym, coefs_tq, pinvG);
 
-J_pnp_loss(image_pt0, world_pt0, K, X_(1 : 3, 1 : 3), X_(1 : 3, 4))
+J_pnp_loss(image_pt0, world_pt0, K, X_(1 : 3, 1 : 3), X_(1 : 3, 4));
 % J_pnp_loss(image_pt0, world_pt0, K, R0, t0)
 
 % disp('X_est:')

@@ -8,12 +8,12 @@ addpath("../20210125_IRLS_ICP/kernel");
 addpath("../tools/plane_ransac");
 addpath("../tools/board_extraction");
 
-% data_type = 'real_data';
-% data_fold = {'real_data_1', 'real_data_2', 'real_data_3'};
-
 data_type = 'real_data';
-data_fold = {'real_data_4', 'real_data_5', 'real_data_6', 'real_data_7', 'real_data_8', 'real_data_9'};
-for data_option = 1:6
+data_fold = {'real_data_1', 'real_data_2', 'real_data_3'};
+
+% data_type = 'real_data';
+% data_fold = {'real_data_4', 'real_data_5', 'real_data_6', 'real_data_7', 'real_data_8', 'real_data_9'};
+for data_option = 1:1
   sprintf('data_option: %d', data_option)
   %% parameters
   params = load(fullfile(data_type, data_fold{data_option}, 'params.mat'));
@@ -27,7 +27,7 @@ for data_option = 1:6
   TGt = params.TGt;
   num_data = params.num_data;
   is_display = 0;
-  all_iterations = 100;
+  all_iterations = 1;
 
   %% Extract features
   pcd_path = fullfile(data_type, data_fold{data_option}, 'pcd');
@@ -81,7 +81,8 @@ for data_option = 1:6
   aver_r_err = [];
   TOptm_best = eye(4, 4);
   min_t = 1000;
-  for PoseNum = 1:length(cam_bors_coeff) - 1
+%   for PoseNum = 1:length(cam_bors_coeff) - 1
+  for PoseNum = length(cam_bors_coeff) - 1
       multi_theta_errs=[];
       t_errs = [];    
       for iter = 1:all_iterations    
