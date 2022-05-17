@@ -7,10 +7,10 @@ format short
 
 data_type = 'real_data';
 visualization_flag = 0;
-debug_flag = 0;
+debug_flag = 1;
 
 %% load data and extract features
-for data_option = 1:6
+for data_option = 3:6
   sprintf('data_option: %d', data_option)
   data_path = fullfile(data_type, strcat(data_type, '_', num2str(data_option)));
   
@@ -33,7 +33,7 @@ for data_option = 1:6
   board_pts = {}; 
   img_corner3D = {}; cam_bors_coeff = {}; cam_bors_center = {};
   pcd_corner3D = {}; pc_bors_ceoff = {}; 
-  for idx = 1:min(25, num_data)
+  for idx = 2:min(25, num_data)
       img_file = strcat(img_list(idx).folder, '/', img_list(idx).name);
       pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
       img_raw = imread(img_file);
@@ -47,7 +47,7 @@ for data_option = 1:6
       if debug_flag
         img_undist_checkerboard_pts = img_undist;
         img_undist_checkerboard_pts = insertMarker(...
-          img_undist_checkerboard_pts, imagePoints(1:9, :), ...
+          img_undist_checkerboard_pts, imagePoints(1:5, :), ...
           'o', 'Color', 'red', 'Size', 10);
         fig = figure; 
         imshow(img_undist_checkerboard_pts);
@@ -77,16 +77,20 @@ for data_option = 1:6
       [R_cam_world, t_cam_world, ~, ~] = ...
         qpep_pnp(imagePoints, worldPoints, K', false, false);
       R_cam_world = R_cam_world'; 
+      T_qpep_pnp = [R_cam_world, t_cam_world; 0 0 0 1];
+      %%%% check if QPEP has another PNP solution
       if t_cam_world(3) > 0
         T_qpep_pnp = [R_cam_world, t_cam_world; 0 0 0 1];
       else
-        T_qpep_pnp = [-1 * R_cam_world, -t_cam_world; 0 0 0 1];
+        eul = rotm2eul(R_cam_world, 'ZYX');
+        R = eul2rotm([eul(1) - pi, -eul(2), -eul(3)], 'ZYX');
+        T_qpep_pnp = [R, -t_cam_world; 0 0 0 1];
       end
       disp('T_qpep_pnp')
       disp(num2str(T_qpep_pnp, '%5f '))
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
-      T = T_matlab_pnp;
+      T = T_qpep_pnp;
       
       % estimate checkerboard corners
       center = mean(worldPoints,1);
@@ -130,18 +134,18 @@ for data_option = 1:6
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
       
       %% lidar: feature extraction      
-      [pts_bor, bor_coeff, err] = boardpts_ext(pc_array, borW, borH);
-      if (isempty(pts_bor))
-        continue;
-      end      
-%       pc_corners = borcorner_ext(pts_bor, borW, borH, debug_flag);
-      if (debug_flag)
-        figure; hold on;
-        pcshow(pointCloud(pts_bor(1:3, :)', 'Intensity', pts_bor(4, :)'));
-%         pcshow(pc_corners', [1,0,0], 'MarkerSize', 1000);
-        hold off;
-        sgtitle('Fitting planar points');
-      end
+%       [pts_bor, bor_coeff, err] = boardpts_ext(pc_array, borW, borH);
+%       if (isempty(pts_bor))
+%         continue;
+%       end      
+% %       pc_corners = borcorner_ext(pts_bor, borW, borH, debug_flag);
+%       if (debug_flag)
+%         figure; hold on;
+%         pcshow(pointCloud(pts_bor(1:3, :)', 'Intensity', pts_bor(4, :)'));
+% %         pcshow(pc_corners', [1,0,0], 'MarkerSize', 1000);
+%         hold off;
+%         sgtitle('Fitting planar points');
+%       end
       
 %       %% save feature extraction results
 %       board_pts{end + 1} = pts_bor(1:3, :);
@@ -150,12 +154,12 @@ for data_option = 1:6
 %       img_corner3D{end + 1} = im_corners;
 %       cam_bors_coeff{end + 1} = cam_plane_coeff;     
 
-      imgs_undist{end + 1} = img_undist;
-      pcs_array{end + 1} = pc_array;
-      
-      board_pts{end + 1} = pts_bor(1:3, :);
-      cam_bors_coeff{end + 1} = cam_plane_coeff;     
-      cam_bors_center{end + 1} = mean(pts_corner, 2)';
+%       imgs_undist{end + 1} = img_undist;
+%       pcs_array{end + 1} = pc_array;
+%       
+%       board_pts{end + 1} = pts_bor(1:3, :);
+%       cam_bors_coeff{end + 1} = cam_plane_coeff;     
+%       cam_bors_center{end + 1} = mean(pts_corner, 2)';
   end
   
   %% QPEP-pTop based extrinsic calibration
@@ -186,6 +190,7 @@ for data_option = 1:6
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       % Initialization
+      % TODO:
       [R_cam_lidar, t_cam_lidar, ~, ~] = qpep_pTop(...
         target_pts, target_normals, ref_pts, ref_normals, false, false);
       Test = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
@@ -193,6 +198,7 @@ for data_option = 1:6
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       % Refinement
+      % TODO:
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
       [r_err, t_err] = evaluateTFError(TGt, Test);
