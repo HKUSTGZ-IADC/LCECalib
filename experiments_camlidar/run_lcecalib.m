@@ -8,7 +8,6 @@ format short
 data_type = 'real_data';
 visualization_flag = 0;
 debug_flag = 0;
-baseline_flag = 1;
 
 %% load data and extract features
 for data_option = 1:6
@@ -30,15 +29,11 @@ for data_option = 1:6
   pcd_list = dir(fullfile(data_path, 'pcd'));
   pcd_list = pcd_list(3:end);  
 
-  all_cam_board_corners = {};
-  all_cam_board_plane_coeff = {};
-  all_cam_board_centers = {};
-  all_lidar_board_pts = {};
-  all_lidar_board_corners = {};
-  all_lidar_board_plane_coeff = {};
-  all_img_undist = {};
-  all_lidar_pc_array = {};
-  for idx = 1:min(25, num_data)
+  all_cam_board_corners = {}; all_cam_board_plane_coeff = {}; all_cam_board_centers = {};
+  all_lidar_board_pts = {}; all_lidar_board_edge_pts = {};
+  all_lidar_board_corners = {}; all_lidar_board_plane_coeff = {};
+  all_img_undist = {}; all_lidar_pc_array = {};
+  for idx = 1:min(60, num_data)
       img_file = strcat(img_list(idx).folder, '/', img_list(idx).name);
       pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
       img_raw = imread(img_file);
@@ -46,7 +41,6 @@ for data_option = 1:6
       lidar_pc_array = pc_raw.Location()';
       
       %% image: feature extraction
-      % LCE-CALIB version 2
       [img_undist, camParams] = undistort_image(img_raw, K, D);
       [imagePoints, boardSize] = detectCheckerboardPoints(img_undist);
       if debug_flag
@@ -58,24 +52,13 @@ for data_option = 1:6
         imshow(img_undist_checkerboard_pts);
         close(fig);
       end
-      if (boardSize(1) == 0 || boardSize(2) == 0)
-        continue;
-      end
-      if (boardSize(1) ~= numH || boardSize(2) ~= numW)
+      if (boardSize(1) == 0 || boardSize(2) == 0 || ...
+          boardSize(1) ~= numH || boardSize(2) ~= numW)
         continue;
       end
       worldPoints = generateCheckerboardPoints(boardSize, pattern_size);
       worldPoints = [worldPoints, zeros(size(worldPoints,1),1)];
 
-      if baseline_flag
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % option 1: MATLAB baseline
-        T_matlab_pnp = estimate2DBoardPoseMatlab(imagePoints, worldPoints, camParams);
-        disp('T_matlab_pnp')
-        disp(num2str(T_matlab_pnp, '%5f '))      
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      end
-      
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       % QPEP-PnP
       [R_cam_world, t_cam_world, ~, ~] = ...
@@ -93,7 +76,7 @@ for data_option = 1:6
       disp('T_qpep_pnp')
       disp(num2str(T_qpep_pnp, '%5f '))
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      T = T_matlab_pnp;
+      T = T_qpep_pnp;
       
       % estimate checkerboard corners
       cam_board_corners = mean(worldPoints, 1)' + ...
@@ -120,152 +103,169 @@ for data_option = 1:6
         sgtitle('Projected 3D corners and patterns');
       end
      
-      %% lidar: feature extraction      
-%       if baseline_flag
-%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         % option 1: MATLAB baseline
-%         T_matlab_pnp = estimate2DBoardPoseMatlab(imagePoints, worldPoints, camParams);
-%         disp('T_matlab_pnp')
-%         disp(num2str(T_matlab_pnp, '%5f '))      
-%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%       end   
-
+      %% lidar: feature extraction     
+      % extract board points
       [lidar_board_pts, lidar_board_plane_coeff, err] = ...
         boardpts_ext(lidar_pc_array, borW, borH);
       if (isempty(lidar_board_pts))
         continue;
-      end      
-      lidar_board_corners = borcorner_ext(lidar_board_pts, borW, borH, debug_flag);
-      if (debug_flag)
-        figure; hold on;
-        pcshow(pointCloud(lidar_board_pts(1:3, :)', 'Intensity', lidar_board_pts(4, :)'));
-        pcshow(lidar_board_corners', [1,0,0], 'MarkerSize', 1000);
-        hold off;
-        sgtitle('Fitting planar points');
       end
+      % extract edge points
+      lidar_board_edge_pts_idx = find_pts_ring_edges(lidar_board_pts);
+      lidar_board_edge_pts = lidar_board_pts(:, lidar_board_edge_pts_idx);
       
       %% save feature extraction results
       all_cam_board_corners{end + 1} = cam_board_corners;
       all_cam_board_plane_coeff{end + 1} = cam_board_plane_coeff;     
-      all_cam_board_centers{end + 1} = mean(cam_board_corners, 2)';
+      all_cam_board_centers{end + 1} = mean(cam_board_corners, 2);
       
       all_lidar_board_pts{end + 1} = lidar_board_pts(1:3, :);
-      all_lidar_board_corners{end + 1} = lidar_board_corners;
-      all_lidar_board_plane_coeff{end + 1} = lidar_board_plane_coeff;    
-
+      all_lidar_board_edge_pts{end + 1} = lidar_board_edge_pts(1:3, :);
       all_img_undist{end + 1} = img_undist;
-      all_lidar_pc_array{end + 1} = lidar_pc_array;     
+      all_lidar_pc_array{end + 1} = lidar_pc_array;   
   end
   
   %% QPEP-pTop based extrinsic calibration
-%   aver_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
-%   aver_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
-%   Test_best = eye(4, 4);
-%   min_t = 1000;
-%   for frame_num = length(all_cam_board_plane_coeff)
-%     r_errs = zeros(1, all_iterations); 
-%     t_errs = zeros(1, all_iterations);
-%     for iter = 1:all_iterations    
-%       reidx = randperm(length(all_cam_board_plane_coeff));
-%       ref_pts = zeros(0, 3);
-%       ref_normals = zeros(0, 3);
-%       target_pts = zeros(0, 3);
-%       target_normals = zeros(0, 3);
-%       for idx = 1:frame_num
-%         bpts = board_pts{reidx(idx)};
-%         cbcoeff = all_cam_board_plane_coeff{reidx(idx)};
-%         cbcenter = all_cam_board_centers{reidx(idx)};
-%         for j = 1:length(bpts)
-%           ref_pts = [ref_pts; cbcenter];
-%           ref_normals = [ref_normals; cbcoeff(1:3)'];
-%           target_pts = [target_pts; bpts(:, j)'];          
-%           target_normals = [target_normals; [0 0 0]];
-%         end
-%       end
-%       
-%       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%       % Initialization
-%       % TODO:
-%       [R_cam_lidar, t_cam_lidar, ~, ~] = qpep_pTop(...
-%         target_pts, target_normals, ref_pts, ref_normals, false, false);
-%       Test = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
-%       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%       
-%       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%       % Refinement
-%       % TODO:
-%       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%       
-%       [r_err, t_err] = evaluateTFError(TGt, Test);
-%       r_errs(iter) = r_err;
-%       t_errs(iter) = t_err;
-%       if (t_err < min_t)
-%         min_t = t_err;
-%         Test_best = Test;
-%       end
-%       
-%       disp('TGt')
-%       disp(num2str(TGt, '%5f '))
-%       disp('Test')
-%       disp(num2str(Test, '%5f '))     
-%       debug_flag = 1;
-%       if debug_flag
-%         imshow(pt_project_depth2image(...
-%           Test, K, all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
-%       end         
-%     end
-%     aver_t_err(:, frame_num) = t_errs';
-%     aver_r_err(:, frame_num) = r_errs';
-%     sprintf('Number of frames used for calibration: %d', frame_num)    
-%   end
-%   save(fullfile(data_path, 'result_proposed.mat'), ...
-%     'aver_r_err', 'aver_t_err', 'TOptm', ...
-%     'board_pts', 'pcd_corner3D', 'pc_bors_ceoff', 'img_corner3D', 'cam_bors_coeff');
-
-  %% Calibration
-  aver_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff) - 1);
-  aver_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff) - 1);
-  TOptm_best = eye(4, 4);
+  aver_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  aver_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  T_est_best = eye(4, 4);
   min_t = 1000;
-%   for PoseNum = 1:length(all_cam_board_plane_coeff) - 1
-  for PoseNum = length(all_cam_board_plane_coeff) - 1
-      r_errs = zeros(1, all_iterations); 
-      t_errs = zeros(1, all_iterations);
-      for iter = 1:all_iterations    
-        reidx = randperm(size(all_cam_board_corners, 2));
-        sub_cam_corners = {};
-        sub_cam_board_coeff = {};
-        sub_lidar_corners = {};
-        sub_lidar_board_coeff = {};
-        for idx = 1:PoseNum
-            sub_cam_corners{end+1} = all_cam_board_corners{reidx(idx)};
-            sub_cam_board_coeff{end+1} = all_cam_board_plane_coeff{reidx(idx)};
-            sub_lidar_corners{end+1} = all_lidar_board_corners{reidx(idx)};
-            sub_lidar_board_coeff{end+1} = all_lidar_board_plane_coeff{reidx(idx)};
+  for frame_num = length(all_cam_board_plane_coeff)
+    r_errs = zeros(1, all_iterations); 
+    t_errs = zeros(1, all_iterations);
+    for iter = 1:all_iterations  % multip
+      reidx = randperm(length(all_cam_board_plane_coeff));
+      
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      % Initialization
+      reference_pts = zeros(0, 3);
+      reference_normals = zeros(0, 3);
+      target_pts = zeros(0, 3);
+      target_normals = zeros(0, 3);
+      weights = zeros(0, 1);
+      for idx = 1:frame_num
+        lbpts = all_lidar_board_pts{reidx(idx)};
+        cbcoeff = all_cam_board_plane_coeff{reidx(idx)};
+        cbcenter = all_cam_board_centers{reidx(idx)};
+        for j = 1:length(lbpts)
+          reference_pts = [reference_pts; cbcenter'];
+          reference_normals = [reference_normals; cbcoeff(1:3)'];
+          target_pts = [target_pts; lbpts(:, j)'];          
+          target_normals = [target_normals; [0 0 0]];
+          weights = [weights; 1.0 / length(lbpts)];
         end
+      end     
+      % QPEP-PTop using only planar constraints
+      [R_cam_lidar, t_cam_lidar, ~, ~] = qpep_pTop(...
+        target_pts, target_normals, ...
+        reference_pts, reference_normals, ...
+        false, false, weights);
+      T_ini_qpep = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
+      disp('T_ini_qpep')
+      disp(num2str(T_ini_qpep, '%5f '))
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      % Refinement
+      T_ref_qpep = T_ini_qpep;
+      for iter_ref = 1:10
+        reference_pts = zeros(0, 3);
+        reference_normals = zeros(0, 3);
+        target_pts = zeros(0, 3);
+        target_normals = zeros(0, 3);        
+        weights = zeros(0, 1);
+        for idx = 1:frame_num
+          lbpts = all_lidar_board_pts{reidx(idx)};
+          lepts = all_lidar_board_edge_pts{reidx(idx)};
+          cbcorner = all_cam_board_corners{reidx(idx)};
+          cbcoeff = all_cam_board_plane_coeff{reidx(idx)};
+          cbcenter = all_cam_board_centers{reidx(idx)};          
 
-        TInit = plane_init(sub_lidar_board_coeff, sub_cam_board_coeff, ...
-          sub_lidar_corners,sub_cam_corners);
-        TOptm = corner_optm(sub_cam_corners, sub_lidar_corners, TInit);
-        
-        [r_err, t_err] = evaluateTFError(TGt, TOptm);
-        r_errs(iter) = r_err;
-        t_errs(iter) = t_err;
-        if (t_err < min_t)
-          min_t = t_err;
-          TOptm_best = TOptm;
+          % set weights of edge and planar residuals
+          r1 = 1.0 / size(lepts, 2);  % weights for edge residuals
+          r2 = 30 * 1.0 / length(lbpts);   % weights for planar residuals
+          
+          %%%%% add edge residuals
+          [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
+          lepts_cam = T_ref_qpep(1:3, 1:3) * lepts + T_ref_qpep(1:3, 4);  % 3xN
+          corre_idx = knnsearch(cbedge(1:3, :)', lepts_cam', 'K', 1);
+          corre_cbedge = cbedge(:, corre_idx); % 4xN
+          for j = 1:size(lepts_cam, 2)
+            p = lepts_cam(:, j);
+            p1 = cbedge_dir(4:6, corre_cbedge(4, j));
+            p2 = p1 + cbedge_dir(1:3, corre_cbedge(4, j));
+            p1p2 = p1 - p2;
+            p1p = p1 - p;
+            p2p = p2 - p;
+            n1 = cross(p1p, p2p);
+            n1 = n1 / norm(n1);
+            n2 = cross(n1, p1p2);
+            n2 = n2 / norm(n2);
+            reference_pts = [reference_pts; cbedge(1:3, corre_idx(j))'];
+            reference_normals = [reference_normals; n2'];
+            target_pts = [target_pts; lepts(:, j)'];
+            target_normals = [target_normals; [0 0 0]];
+            weights = [weights; r1];
+          end
+          debug_flag = 0;
+          if debug_flag
+            fig = figure; hold on;
+            plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g*'); 
+            corr_pts = cbedge(1:3, corre_idx)';
+            plot3(corr_pts(:, 1), corr_pts(:, 2), corr_pts(:, 3), 'ro', 'MarkerSize', 12);
+            plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'bo', 'MarkerSize', 12);
+            legend('cam edge pts', 'cam corre edge pts', 'lidar edge pts');
+            hold off;
+            axis equal;
+            view(40, 10);
+            close(fig);
+          end          
+          
+          %%%%% add planar residuals
+          for j = 1:length(lbpts)
+            reference_pts = [reference_pts; cbcenter'];
+            reference_normals = [reference_normals; cbcoeff(1:3)'];
+            target_pts = [target_pts; lbpts(:, j)'];          
+            target_normals = [target_normals; [0 0 0]];
+            weights = [weights; r2];
+          end          
         end
-        
-        if debug_flag
-          [img_undist, camParams] = undistort_image(img_raw, K, D);        
-          imshow(pt_project_depth2image(TOptm, K, all_lidar_pc_array{reidx(idx)}, img_undist));
-        end       
+        % QPEP-PTop using both edge and planar constraints
+        [R_cam_lidar, t_cam_lidar, ~, ~] = qpep_pTop(...
+          target_pts, target_normals, ...
+          reference_pts, reference_normals, ...
+          false, false, weights);
+        T_ref_qpep = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
+        disp('T_ref_qpep')
+        disp(num2str(T_ref_qpep, '%5f '))
+        disp('TGt')
+        disp(num2str(TGt, '%5f '))
       end
-      aver_t_err(:, PoseNum) = t_errs';
-      aver_r_err(:, PoseNum) = r_errs';
-      sprintf('PoseNum: %d', PoseNum)
+      % After multiple iterations of refinement
+      T_est = T_ref_qpep;
+      disp('T_est')
+      disp(num2str(T_est, '%5f ')) 
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+      [r_err, t_err] = evaluateTFError(TGt, T_est);
+      r_errs(iter) = r_err; t_errs(iter) = t_err;
+      if (t_err < min_t)
+        min_t = t_err;
+        T_est_best = T_est;
+      end
+      
+      disp('TGt')
+      disp(num2str(TGt, '%5f '))
+      debug_flag = 1;
+      if debug_flag
+        imshow(pt_project_depth2image(T_est, K, ...
+          all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
+      end         
+    end
+    aver_t_err(:, frame_num) = t_errs';
+    aver_r_err(:, frame_num) = r_errs';
+    sprintf('Number of frames used for calibration: %d', frame_num)    
   end
-  TOptm = TOptm_best;
 %   save(fullfile(data_path, 'result_proposed.mat'), ...
 %     'aver_r_err', 'aver_t_err', 'TOptm', ...
 %     'board_pts', 'pcd_corner3D', 'pc_bors_ceoff', 'img_corner3D', 'cam_bors_coeff');

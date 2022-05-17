@@ -1,4 +1,5 @@
-function [pts_out,plane_model,error_out] = boardpts_ext(pts_raw_in,borW,borH)
+function [pts_out, plane_model, error_out] = ...
+  boardpts_ext(pts_raw_in,borW,borH)
 addpath("../../20210125_IRLS_ICP");
 addpath("../");
 addpath("../plane_ransac");

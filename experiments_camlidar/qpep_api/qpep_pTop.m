@@ -32,13 +32,14 @@
 %   covR     : covariance matrix of quaternion
 %   covt     : covariance matrix of translation
 
-function [Rest, test, covR, covt] = qpep_pTop(r0, nvr, b0, nvb, comp_cov, plot_flag)
+function [Rest, test, covR, covt] = ...
+  qpep_pTop(r0, nvr, b0, nvb, comp_cov, plot_flag, weights)
 
 len = size(r0, 1);
 
 %%
 [W0, Q0, D, G, c, coef_f_q_sym, coef_J_pure, coefs_tq, pinvG] = ...
-  pTop_WQDGc_new(r0, b0, nvb);
+  pTop_WQDGc_new_weight(r0, b0, nvb, weights);
 t_funcs = {@t1_pTop_func_new, @t2_pTop_func_new, @t3_pTop_func_new};
 
 W0_ = W0(1 : 3, :);

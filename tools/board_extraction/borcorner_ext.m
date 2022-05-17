@@ -1,4 +1,4 @@
-function [corners] = borcorner_ext(bor_pts,borW,borH,is_display)
+function [corners, edge_pts] = borcorner_ext(bor_pts,borW,borH,is_display)
 corners=[];
 
 %% 先用icp找到一个候选解
