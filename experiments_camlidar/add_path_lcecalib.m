@@ -8,4 +8,5 @@ function [] = add_path_lcecalib()
   
   addpath('eval');
   addpath('tools');
+  addpath('baseline');
 end
