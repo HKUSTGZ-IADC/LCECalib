@@ -12,7 +12,7 @@ debug_flag = 0;
 %% load data and extract features
 for data_option = 1:6
   sprintf('data_option: %d', data_option)
-  data_path = fullfile(data_type, strcat(data_type, '_', num2str(data_option)));
+  data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
   params = load(fullfile(data_path, 'params.mat'));
   borW = params.borW; borH = params.borH; 

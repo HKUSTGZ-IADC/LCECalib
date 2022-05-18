@@ -6,7 +6,7 @@ function [] = add_path_lcecalib()
   addpath("../tools/plane_ransac");
   addpath("../tools/board_extraction");
   
-  addpath('eval');
+  addpath('evaluation');
   addpath('tools');
   addpath('baseline');
 end

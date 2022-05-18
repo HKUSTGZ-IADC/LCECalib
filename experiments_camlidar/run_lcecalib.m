@@ -10,9 +10,9 @@ visualization_flag = 0;
 debug_flag = 0;
 
 %% load data and extract features
-for data_option = 1:6
+for data_option = 1:1
   sprintf('data_option: %d', data_option)
-  data_path = fullfile(data_type, strcat(data_type, '_', num2str(data_option)));
+  data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
   params = load(fullfile(data_path, 'params.mat'));
   borW = params.borW; borH = params.borH; 
@@ -97,8 +97,8 @@ for data_option = 1:6
         subplot(121); imshow(img_raw);
         subplot(122); imshow(img_undist);
         hold on;
-        plot(worldPx(1,:),worldPx(2,:),'.r');
-        plot(pc_corner_px(1,:), pc_corner_px(2,:),'-ob');
+        plot(worldPx(1,:), worldPx(2,:), '.r');
+        plot(pc_corner_px(1,:), pc_corner_px(2,:), '-ob');
         hold off;
         sgtitle('Projected 3D corners and patterns');
       end
@@ -266,10 +266,19 @@ for data_option = 1:6
     aver_r_err(:, frame_num) = r_errs';
     sprintf('Number of frames used for calibration: %d', frame_num)    
   end
-%   save(fullfile(data_path, 'result_proposed.mat'), ...
-%     'aver_r_err', 'aver_t_err', 'TOptm', ...
-%     'board_pts', 'pcd_corner3D', 'pc_bors_ceoff', 'img_corner3D', 'cam_bors_coeff');
+save(fullfile(data_path, 'result_lcecalib_qpep.mat'), ...
+  'aver_r_err', 'aver_t_err', 'T_est_best', ...
+  'all_cam_board_corners', 'all_cam_board_plane_coeff', ...
+  'all_cam_board_centers', ...
+  'all_lidar_board_pts', 'all_lidar_board_edge_pts');
 
+save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
+  'aver_r_err', 'aver_t_err', 'T_est_best', ...
+  'all_cam_board_corners', 'all_cam_board_plane_coeff', ...
+  'all_cam_board_centers', ...
+  'all_lidar_board_pts', 'all_lidar_board_edge_pts', ...
+  'all_img_undist', 'all_lidar_pc_array');
+      
   %% Plot results
 %   figure; boxplot(aver_r_err(:, 3: end));
 %   xlabel("Number of Poses"); title("Rotation Error [deg]");

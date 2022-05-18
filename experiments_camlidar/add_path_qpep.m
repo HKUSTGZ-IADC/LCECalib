@@ -15,5 +15,5 @@ function [] = add_path_qpep()
   end
   p = genpath(fullfile(libQPEP_dir, 'YALMIP'));
   addpath(p);
-  addpath('qpep_api');
+  addpath('qpep');
 end
