@@ -8,6 +8,7 @@ format short
 data_type = 'real_data';
 visualization_flag = 0;
 debug_flag = 0;
+save_result_flag = 0;
 
 %% load data and extract features
 for data_option = 1:1
@@ -29,7 +30,8 @@ for data_option = 1:1
   pcd_list = dir(fullfile(data_path, 'pcd'));
   pcd_list = pcd_list(3:end);  
 
-  all_cam_board_corners = {}; all_cam_board_plane_coeff = {}; all_cam_board_centers = {};
+  all_cam_board_corners = {}; all_cam_board_centers = {};
+  all_cam_board_plane_coeff = {}; all_cam_board_plane_coeff_cov = {}; 
   all_lidar_board_pts = {}; all_lidar_board_edge_pts = {};
   all_lidar_board_corners = {}; all_lidar_board_plane_coeff = {};
   all_img_undist = {}; all_lidar_pc_array = {};
@@ -61,7 +63,7 @@ for data_option = 1:1
 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       % QPEP-PnP
-      [R_cam_world, t_cam_world, ~, ~] = ...
+      [R_cam_world, t_cam_world, covR, covt] = ...
         qpep_pnp(imagePoints, worldPoints, K', false, false);
       R_cam_world = R_cam_world'; 
       T_qpep_pnp = [R_cam_world, t_cam_world; 0 0 0 1];
@@ -85,6 +87,8 @@ for data_option = 1:1
       cam_board_corners = T(1:3, 1:3) * cam_board_corners + T(1:3, 4);
       n = T(1:3,1:3) * [0,0,1]';
       d = -(n' * T(1:3,4));
+      covn = 4 *...
+        (R_cam_world * skew([0,0,1]')) * covR(2:4, 2:4) * (R_cam_world * skew([0,0,1]'))';
       cam_board_plane_coeff = [n; d];
       if cam_board_plane_coeff(4) < 0
           cam_board_plane_coeff = -cam_board_plane_coeff;
@@ -116,8 +120,9 @@ for data_option = 1:1
       
       %% save feature extraction results
       all_cam_board_corners{end + 1} = cam_board_corners;
-      all_cam_board_plane_coeff{end + 1} = cam_board_plane_coeff;     
       all_cam_board_centers{end + 1} = mean(cam_board_corners, 2);
+      all_cam_board_plane_coeff{end + 1} = cam_board_plane_coeff;     
+      all_cam_board_plane_coeff_cov{end + 1} = covn;
       
       all_lidar_board_pts{end + 1} = lidar_board_pts(1:3, :);
       all_lidar_board_edge_pts{end + 1} = lidar_board_edge_pts(1:3, :);
@@ -133,7 +138,7 @@ for data_option = 1:1
   for frame_num = length(all_cam_board_plane_coeff)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
-    for iter = 1:all_iterations  % multip
+    for iter = 1:all_iterations  % multiple iterations
       reidx = randperm(length(all_cam_board_plane_coeff));
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -159,7 +164,7 @@ for data_option = 1:1
       [R_cam_lidar, t_cam_lidar, ~, ~] = qpep_pTop(...
         target_pts, target_normals, ...
         reference_pts, reference_normals, ...
-        false, false, weights);
+        true, true, weights);
       T_ini_qpep = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
       disp('T_ini_qpep')
       disp(num2str(T_ini_qpep, '%5f '))
@@ -168,7 +173,7 @@ for data_option = 1:1
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       % Refinement
       T_ref_qpep = T_ini_qpep;
-      for iter_ref = 1:10
+      for iter_ref = 1:1
         reference_pts = zeros(0, 3);
         reference_normals = zeros(0, 3);
         target_pts = zeros(0, 3);
@@ -183,6 +188,7 @@ for data_option = 1:1
 
           % set weights of edge and planar residuals
           r1 = 1.0 / size(lepts, 2);  % weights for edge residuals
+%           r1 = 0;
           r2 = 30 * 1.0 / length(lbpts);   % weights for planar residuals
           
           %%%%% add edge residuals
@@ -261,24 +267,44 @@ for data_option = 1:1
         imshow(pt_project_depth2image(T_est, K, ...
           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
       end         
+      
+      % TODO: add point-to-plane registration visualization
+      debug_flag = 1;
+      if debug_flag
+        fig = figure; hold on;
+        lbpts_cam = T_est(1:3, 1:3) * lbpts + T_est(1:3, 4);  % 3xN
+        lepts_cam = T_est(1:3, 1:3) * lepts + T_est(1:3, 4);  % 3xN
+        plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g*'); 
+        plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r.', 'MarkerSize', 6);
+        plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'bo', 'MarkerSize', 12);
+        legend('cam edge pts', 'cam corre edge pts', 'lidar edge pts');
+        hold off;
+        axis equal;
+        view(40, 10);
+        close(fig);
+      end              
     end
     aver_t_err(:, frame_num) = t_errs';
     aver_r_err(:, frame_num) = r_errs';
     sprintf('Number of frames used for calibration: %d', frame_num)    
   end
-save(fullfile(data_path, 'result_lcecalib_qpep.mat'), ...
-  'aver_r_err', 'aver_t_err', 'T_est_best', ...
-  'all_cam_board_corners', 'all_cam_board_plane_coeff', ...
-  'all_cam_board_centers', ...
-  'all_lidar_board_pts', 'all_lidar_board_edge_pts');
+  
+  if save_result_flag
+    save(fullfile(data_path, 'result_lcecalib_qpep.mat'), ...
+      'aver_r_err', 'aver_t_err', 'T_est_best', ...
+      'all_cam_board_corners', 'all_cam_board_plane_coeff', ...
+      'all_cam_board_centers', ...
+      'all_lidar_board_pts', 'all_lidar_board_edge_pts');
 
-save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
-  'aver_r_err', 'aver_t_err', 'T_est_best', ...
-  'all_cam_board_corners', 'all_cam_board_plane_coeff', ...
-  'all_cam_board_centers', ...
-  'all_lidar_board_pts', 'all_lidar_board_edge_pts', ...
-  'all_img_undist', 'all_lidar_pc_array');
-      
+    save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
+      'aver_r_err', 'aver_t_err', 'T_est_best', ...
+      'all_cam_board_corners', 'all_cam_board_plane_coeff', ...
+      'all_cam_board_centers', ...
+      'all_lidar_board_pts', 'all_lidar_board_edge_pts', ...
+      'all_img_undist', 'all_lidar_pc_array');
+  end
+end
+
   %% Plot results
 %   figure; boxplot(aver_r_err(:, 3: end));
 %   xlabel("Number of Poses"); title("Rotation Error [deg]");
@@ -299,7 +325,6 @@ save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
 %   set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
 %   title('Mean and Median Translation Error', 'FontSize', 30, 'FontWeight', 'normal');
 %   box on;
-end
 
 
 

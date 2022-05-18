@@ -163,7 +163,7 @@ end
 
 %% in previous preprocess, we may remove useful points. 
 %  So we use kdtree to refind useful points based on previous cluster results
-[model, inlinerIdx] = plane_ransac(min_cluster(1:3, :), 0.03);
+[model, inlinerIdx] = plane_ransac(min_cluster(1:3, :), 0.005);
 ns = KDTreeSearcher(pts_in(1:3,:)');
 idx = rangesearch(ns, min_cluster(1:3, :)', borH/2);
 for index = 1:size(idx,1)

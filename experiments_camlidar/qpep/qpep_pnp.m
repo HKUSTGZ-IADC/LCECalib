@@ -138,10 +138,17 @@ if comp_cov
                             @eq_pnp_func_new, @Jacob_pnp_func_new, t_funcs, ...
                             coef_f_q_sym, coefs_tq, pinvG);
       q = dcm2quat(X_(1 : 3, 1 : 3)).';
+      t = X_(1 : 3, 4);
+      
+      % added by jjiao: modify another solution of PnP
+      if t(3) < 0
+        eul = quat2eul(q', 'ZYX');
+        q = eul2quat([eul(1) - pi, -eul(2), -eul(3)], 'ZYX')';
+        t = -t;
+      end
       if(q(1) < 0)
           q = - q;
-      end
-      t = X_(1 : 3, 4);
+      end     
 
       qs(:, j) = q;
       ts(:, j) = t;
