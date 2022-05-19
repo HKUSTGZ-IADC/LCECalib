@@ -25,7 +25,7 @@ for data_option = 1:1
   K = params.K; D = params.D;
   TGt = params.TGt;
   num_data = params.num_data;
-  all_iterations = 10;
+  all_iterations = 1;
 
   %% Extract features
   img_list = dir(fullfile(data_path, 'img')); 
@@ -163,8 +163,11 @@ for data_option = 1:1
   aver_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
   T_est_best = eye(4, 4);
   min_t = 1000;
+<<<<<<< Updated upstream
+=======
 %   for frame_num = length(all_cam_board_plane_coeff)
-  for frame_num = 9:length(all_cam_board_plane_coeff)
+>>>>>>> Stashed changes
+  for frame_num = length(all_cam_board_plane_coeff)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
     for iter = 1:all_iterations  % multiple iterations
@@ -222,7 +225,7 @@ for data_option = 1:1
           cbcenter = all_cam_board_centers{reidx(idx)};          
 
           % set weights of edge and planar residuals
-          r1 = 1.0 / size(lepts, 2);  % weights for edge residuals            
+          r1 = 2.0 / size(lepts, 2);  % weights for edge residuals            
 %           r2 = 30 * 1.0 / length(lbpts);   % weights for planar residuals
           r2 = 1.0 / length(lbpts);   % weights for planar residuals
           
@@ -301,10 +304,11 @@ for data_option = 1:1
       debug_flag = 1;
       if debug_flag
         figure;
+        subplot(121);
         imshow(pt_project_depth2image(T_est, K, ...
           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
         title('Projected points with Test', 'FontSize', 25);
-        figure;
+        subplot(122);
         imshow(pt_project_depth2image(TGt, K, ...
           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
         title('Projected points with TGt', 'FontSize', 25);
@@ -323,7 +327,7 @@ for data_option = 1:1
         hold off;
         axis equal;
         view(40, 10);
-        reclose(fig);
+        close(fig);
       end              
     end
     aver_t_err(:, frame_num) = t_errs';
