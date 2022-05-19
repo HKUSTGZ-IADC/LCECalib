@@ -5,13 +5,16 @@ add_path_qpep;
 
 format short
 
-data_type = 'real_data';
+% data_type = 'real_data';
+data_type = 'simu_data';
+
 visualization_flag = 0;
 debug_flag = 0;
 save_result_flag = 0;
+plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 1:1
+for data_option = 2:2
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
@@ -22,7 +25,7 @@ for data_option = 1:1
   K = params.K; D = params.D;
   TGt = params.TGt;
   num_data = params.num_data;
-  all_iterations = 1;
+  all_iterations = 10;
 
   %% Extract features
   img_list = dir(fullfile(data_path, 'img')); 
@@ -110,7 +113,7 @@ for data_option = 1:1
       %% lidar: feature extraction     
       % extract board points
       [lidar_board_pts, lidar_board_plane_coeff, err] = ...
-        boardpts_ext(lidar_pc_array, borW, borH);
+        boardpts_ext(lidar_pc_array, borW, borH, data_type);
       if (isempty(lidar_board_pts))
         continue;
       end
@@ -118,6 +121,26 @@ for data_option = 1:1
       lidar_board_edge_pts_idx = find_pts_ring_edges(lidar_board_pts);
       lidar_board_edge_pts = lidar_board_pts(:, lidar_board_edge_pts_idx);
       
+      % project planar points and edge points onto plane to reduce noise
+      n = lidar_board_plane_coeff(1:3);
+      d = lidar_board_plane_coeff(4);
+      pts_on_plane = lidar_board_edge_pts(1:3, 1);
+      pts_on_plane(3) = -((d + n(1:2)' * pts_on_plane(1:2)) / n(3));
+      
+      for ptid = 1 : size(lidar_board_pts, 2)
+        pt = lidar_board_pts(1:3, ptid);
+        v = pt - pts_on_plane;
+        pt_onboard = pts_on_plane + v - (v' * n * n);
+        lidar_board_pts(1:3, ptid) = pt_onboard;
+      end
+      
+      for ptid = 1 : size(lidar_board_edge_pts, 2)
+        pt = lidar_board_edge_pts(1:3, ptid);
+        v = pt - pts_on_plane;
+        pt_onboard = pts_on_plane + v - (v' * n * n);
+        lidar_board_edge_pts(1:3, ptid) = pt_onboard;
+      end
+
       %% save feature extraction results
       all_cam_board_corners{end + 1} = cam_board_corners;
       all_cam_board_centers{end + 1} = mean(cam_board_corners, 2);
@@ -135,7 +158,8 @@ for data_option = 1:1
   aver_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
   T_est_best = eye(4, 4);
   min_t = 1000;
-  for frame_num = length(all_cam_board_plane_coeff)
+%   for frame_num = length(all_cam_board_plane_coeff)
+  for frame_num = 1:length(all_cam_board_plane_coeff)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
     for iter = 1:all_iterations  % multiple iterations
@@ -164,7 +188,7 @@ for data_option = 1:1
       [R_cam_lidar, t_cam_lidar, ~, ~] = qpep_pTop(...
         target_pts, target_normals, ...
         reference_pts, reference_normals, ...
-        true, true, weights);
+        false, false, weights);
       T_ini_qpep = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
       disp('T_ini_qpep')
       disp(num2str(T_ini_qpep, '%5f '))
@@ -173,7 +197,13 @@ for data_option = 1:1
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       % Refinement
       T_ref_qpep = T_ini_qpep;
-      for iter_ref = 1:1
+      if num_data >= 15
+        use_edge_flag = 0;
+      else
+        use_edge_flag = 1;
+      end
+      use_planar_flag = 1;
+      for iter_ref = 1:5
         reference_pts = zeros(0, 3);
         reference_normals = zeros(0, 3);
         target_pts = zeros(0, 3);
@@ -187,54 +217,57 @@ for data_option = 1:1
           cbcenter = all_cam_board_centers{reidx(idx)};          
 
           % set weights of edge and planar residuals
-          r1 = 1.0 / size(lepts, 2);  % weights for edge residuals
-%           r1 = 0;
-          r2 = 30 * 1.0 / length(lbpts);   % weights for planar residuals
+          r1 = 1.0 / size(lepts, 2);  % weights for edge residuals            
+%           r2 = 30 * 1.0 / length(lbpts);   % weights for planar residuals
+          r2 = 1.0 / length(lbpts);   % weights for planar residuals
           
           %%%%% add edge residuals
           [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
           lepts_cam = T_ref_qpep(1:3, 1:3) * lepts + T_ref_qpep(1:3, 4);  % 3xN
           corre_idx = knnsearch(cbedge(1:3, :)', lepts_cam', 'K', 1);
           corre_cbedge = cbedge(:, corre_idx); % 4xN
-          for j = 1:size(lepts_cam, 2)
-            p = lepts_cam(:, j);
-            p1 = cbedge_dir(4:6, corre_cbedge(4, j));
-            p2 = p1 + cbedge_dir(1:3, corre_cbedge(4, j));
-            p1p2 = p1 - p2;
-            p1p = p1 - p;
-            p2p = p2 - p;
-            n1 = cross(p1p, p2p);
-            n1 = n1 / norm(n1);
-            n2 = cross(n1, p1p2);
-            n2 = n2 / norm(n2);
-            reference_pts = [reference_pts; cbedge(1:3, corre_idx(j))'];
-            reference_normals = [reference_normals; n2'];
-            target_pts = [target_pts; lepts(:, j)'];
-            target_normals = [target_normals; [0 0 0]];
-            weights = [weights; r1];
+          if use_edge_flag
+            for j = 1:size(lepts_cam, 2)
+              p = lepts_cam(:, j);
+              p1 = cbedge_dir(4:6, corre_cbedge(4, j));
+              p2 = p1 + cbedge_dir(1:3, corre_cbedge(4, j));
+              p1p2 = p1 - p2;
+              p1p = p1 - p;
+              p2p = p2 - p;
+              n1 = cross(p1p, p2p);
+              n1 = n1 / norm(n1);
+              n2 = cross(n1, p1p2);
+              n2 = n2 / norm(n2);
+              reference_pts = [reference_pts; cbedge(1:3, corre_idx(j))'];
+              reference_normals = [reference_normals; n2'];
+              target_pts = [target_pts; lepts(:, j)'];
+              target_normals = [target_normals; [0 0 0]];
+              weights = [weights; r1];
+            end   
+            debug_flag = 0;
+            if debug_flag
+              fig = figure; hold on;
+              plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g*'); 
+              corr_pts = cbedge(1:3, corre_idx)';
+              plot3(corr_pts(:, 1), corr_pts(:, 2), corr_pts(:, 3), 'ro', 'MarkerSize', 12);
+              plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'bo', 'MarkerSize', 12);
+              legend('cam edge pts', 'cam corre edge pts', 'lidar edge pts');
+              hold off;
+              axis equal;
+              view(40, 10);
+              close(fig);
+            end
           end
-          debug_flag = 0;
-          if debug_flag
-            fig = figure; hold on;
-            plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g*'); 
-            corr_pts = cbedge(1:3, corre_idx)';
-            plot3(corr_pts(:, 1), corr_pts(:, 2), corr_pts(:, 3), 'ro', 'MarkerSize', 12);
-            plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'bo', 'MarkerSize', 12);
-            legend('cam edge pts', 'cam corre edge pts', 'lidar edge pts');
-            hold off;
-            axis equal;
-            view(40, 10);
-            close(fig);
-          end          
-          
           %%%%% add planar residuals
-          for j = 1:length(lbpts)
-            reference_pts = [reference_pts; cbcenter'];
-            reference_normals = [reference_normals; cbcoeff(1:3)'];
-            target_pts = [target_pts; lbpts(:, j)'];          
-            target_normals = [target_normals; [0 0 0]];
-            weights = [weights; r2];
-          end          
+          if use_planar_flag
+            for j = 1:length(lbpts)
+              reference_pts = [reference_pts; cbcenter'];
+              reference_normals = [reference_normals; cbcoeff(1:3)'];
+              target_pts = [target_pts; lbpts(:, j)'];          
+              target_normals = [target_normals; [0 0 0]];
+              weights = [weights; r2];
+            end      
+          end        
         end
         % QPEP-PTop using both edge and planar constraints
         [R_cam_lidar, t_cam_lidar, ~, ~] = qpep_pTop(...
@@ -260,16 +293,14 @@ for data_option = 1:1
         T_est_best = T_est;
       end
       
-      disp('TGt')
-      disp(num2str(TGt, '%5f '))
-      debug_flag = 1;
+      debug_flag = 0;
       if debug_flag
         imshow(pt_project_depth2image(T_est, K, ...
           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
       end         
       
       % TODO: add point-to-plane registration visualization
-      debug_flag = 1;
+      debug_flag = 0;
       if debug_flag
         fig = figure; hold on;
         lbpts_cam = T_est(1:3, 1:3) * lbpts + T_est(1:3, 4);  % 3xN
@@ -281,12 +312,16 @@ for data_option = 1:1
         hold off;
         axis equal;
         view(40, 10);
-        close(fig);
+        reclose(fig);
       end              
     end
     aver_t_err(:, frame_num) = t_errs';
     aver_r_err(:, frame_num) = r_errs';
     sprintf('Number of frames used for calibration: %d', frame_num)    
+    disp('T_est_best')
+    disp(num2str(T_est_best, '%5f '))    
+    disp('TGt')
+    disp(num2str(TGt, '%5f '))    
   end
   
   if save_result_flag
@@ -303,28 +338,33 @@ for data_option = 1:1
       'all_lidar_board_pts', 'all_lidar_board_edge_pts', ...
       'all_img_undist', 'all_lidar_pc_array');
   end
-end
 
   %% Plot results
-%   figure; boxplot(aver_r_err(:, 3: end));
-%   xlabel("Number of Poses"); title("Rotation Error [deg]");
-%   grid on;
-%   ax = gca;
-%   ax.GridLineStyle = '--';
-%   ax.GridAlpha = 0.3;
-%   set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
-%   title('Mean and Median Rotation Error', 'FontSize', 30, 'FontWeight', 'normal');
-%   box on;
-% 
-%   figure; boxplot(aver_t_err(:, 3: end));
-%   xlabel("Number of Poses"); ylabel("Translation Error [m]");
-%   grid on;
-%   ax = gca;
-%   ax.GridLineStyle = '--';
-%   ax.GridAlpha = 0.3;
-%   set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
-%   title('Mean and Median Translation Error', 'FontSize', 30, 'FontWeight', 'normal');
-%   box on;
+  plot_result_flag = 1;
+  if plot_result_flag
+    figure; 
+    subplot(211); boxplot(aver_r_err(:, 3: end));
+    xlabel("Number of Poses"); ylabel("Rotation Error [deg]");
+    grid on;
+    ax = gca;
+    ax.GridLineStyle = '--';
+    ax.GridAlpha = 0.3;
+    set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
+    box on;
+
+    subplot(212); boxplot(aver_t_err(:, 3: end));
+    xlabel("Number of Poses"); ylabel("Translation Error [m]");
+    grid on;
+    ax = gca;
+    ax.GridLineStyle = '--';
+    ax.GridAlpha = 0.3;
+    set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
+    box on;
+    
+    sgtitle('Mean and Median Rotation and Trnslation Error', 'FontSize', 25, ...
+      'FontName', 'Times', 'FontWeight', 'normal');
+  end
+end
 
 
 

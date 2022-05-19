@@ -26,9 +26,9 @@ if (size(pts_in, 1) == 3)
     thetaidx = find(thetaAlpha(:,1) == angle);
     rings = thetaAlpha(thetaidx,2);
     [M,Imin]  = min(rings);
-    Imin = rings<=(M+0.1);
+    Imin = rings<=(M+0.01);
     [M,Imax]  = max(rings);
-    Imax = rings>=(M-0.1);
+    Imax = rings>=(M-0.01);
     idx_out = [idx_out,thetaidx(Imin),thetaidx(Imax)];
   end  
 % using ring information  
@@ -52,9 +52,9 @@ else
     ringidx = find(pts_in(4, :) == ring);
     ringAngle = Alpha(ringidx);
     [M, Imin]  = min(ringAngle);  % the idx of the minimun angle
-    Imin = ringAngle<=(M+0.1);
+    Imin = ringAngle<=(M+0.01);
     [M, Imax]  = max(ringAngle);
-    Imax = ringAngle>=(M-0.1);
+    Imax = ringAngle>=(M-0.01);
     idx_out = [idx_out, ringidx(Imin), ringidx(Imax)];
   end
 end

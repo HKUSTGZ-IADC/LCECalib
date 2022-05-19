@@ -16,7 +16,7 @@ function [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner)
   line3 = cbcorner(:, 4) - cbcorner(:, 3);
   line4 = cbcorner(:, 1) - cbcorner(:, 4);
   cbedge = zeros(4, 0);
-  for r = 0:0.01:1
+  for r = 0:0.005:1
     cbedge(:, end + 1) = [cbcorner(:, 1) + r .* line1; 1];
   end
   for r = 0:0.01:1
