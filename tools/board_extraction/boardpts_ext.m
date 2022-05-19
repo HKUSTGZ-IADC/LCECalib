@@ -192,7 +192,7 @@ for idx_num = 1: max(idx)
     end
 end
 min_cluster = min_cluster(:, idx_max);
-[model, inlieridx] = plane_ransac(min_cluster(1:3, :), 0.05);
+[model, inlieridx] = plane_ransac(min_cluster(1:3, :), 0.04);
 min_cluster = min_cluster(:, inlieridx);
 
 ptCloudIn = pointCloud(min_cluster(1:3, :)', 'Intensity', min_cluster(4, :)');
