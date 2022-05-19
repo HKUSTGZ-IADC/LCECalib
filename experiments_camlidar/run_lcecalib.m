@@ -5,8 +5,8 @@ add_path_qpep;
 
 format short
 
-% data_type = 'real_data';
-data_type = 'simu_data';
+data_type = 'real_data';
+% data_type = 'simu_data';
 
 visualization_flag = 0;
 debug_flag = 0;
@@ -14,7 +14,7 @@ save_result_flag = 0;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 2:2
+for data_option = 1:1
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
@@ -35,7 +35,8 @@ for data_option = 2:2
 
   all_cam_board_corners = {}; all_cam_board_centers = {};
   all_cam_board_plane_coeff = {}; all_cam_board_plane_coeff_cov = {}; 
-  all_lidar_board_pts = {}; all_lidar_board_edge_pts = {};
+  all_lidar_board_pts = {}; all_lidar_board_pts_raw = {};
+  all_lidar_board_edge_pts = {};
   all_lidar_board_corners = {}; all_lidar_board_plane_coeff = {};
   all_img_undist = {}; all_lidar_pc_array = {};
   for idx = 1:min(60, num_data)
@@ -78,8 +79,10 @@ for data_option = 2:2
         R = eul2rotm([eul(1) - pi, -eul(2), -eul(3)], 'ZYX');
         T_qpep_pnp = [R, -t_cam_world; 0 0 0 1];
       end
-      disp('T_qpep_pnp')
-      disp(num2str(T_qpep_pnp, '%5f '))
+      if debug_flag
+        disp('T_qpep_pnp')
+        disp(num2str(T_qpep_pnp, '%5f '))
+      end
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       T = T_qpep_pnp;
       
@@ -114,6 +117,7 @@ for data_option = 2:2
       % extract board points
       [lidar_board_pts, lidar_board_plane_coeff, err] = ...
         boardpts_ext(lidar_pc_array, borW, borH, data_type);
+      lidar_board_pts_raw = lidar_board_pts;
       if (isempty(lidar_board_pts))
         continue;
       end
@@ -147,6 +151,7 @@ for data_option = 2:2
       all_cam_board_plane_coeff{end + 1} = cam_board_plane_coeff;     
       all_cam_board_plane_coeff_cov{end + 1} = covn;
       
+      all_lidar_board_pts_raw{end + 1} = lidar_board_pts_raw(1:3, :);
       all_lidar_board_pts{end + 1} = lidar_board_pts(1:3, :);
       all_lidar_board_edge_pts{end + 1} = lidar_board_edge_pts(1:3, :);
       all_img_undist{end + 1} = img_undist;
@@ -159,7 +164,7 @@ for data_option = 2:2
   T_est_best = eye(4, 4);
   min_t = 1000;
 %   for frame_num = length(all_cam_board_plane_coeff)
-  for frame_num = 1:length(all_cam_board_plane_coeff)
+  for frame_num = 9:length(all_cam_board_plane_coeff)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
     for iter = 1:all_iterations  % multiple iterations
@@ -293,14 +298,20 @@ for data_option = 2:2
         T_est_best = T_est;
       end
       
-      debug_flag = 0;
+      debug_flag = 1;
       if debug_flag
+        figure;
         imshow(pt_project_depth2image(T_est, K, ...
           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
+        title('Projected points with Test', 'FontSize', 25);
+        figure;
+        imshow(pt_project_depth2image(TGt, K, ...
+          all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
+        title('Projected points with TGt', 'FontSize', 25);
       end         
       
       % TODO: add point-to-plane registration visualization
-      debug_flag = 0;
+      debug_flag = 1;
       if debug_flag
         fig = figure; hold on;
         lbpts_cam = T_est(1:3, 1:3) * lbpts + T_est(1:3, 4);  % 3xN
@@ -343,7 +354,7 @@ for data_option = 2:2
   plot_result_flag = 1;
   if plot_result_flag
     figure; 
-    subplot(211); boxplot(aver_r_err(:, 3: end));
+    subplot(211); boxplot(aver_r_err(:, 5: end));
     xlabel("Number of Poses"); ylabel("Rotation Error [deg]");
     grid on;
     ax = gca;
@@ -352,7 +363,7 @@ for data_option = 2:2
     set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
     box on;
 
-    subplot(212); boxplot(aver_t_err(:, 3: end));
+    subplot(212); boxplot(aver_t_err(:, 5: end));
     xlabel("Number of Poses"); ylabel("Translation Error [m]");
     grid on;
     ax = gca;
