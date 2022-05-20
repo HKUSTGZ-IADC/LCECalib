@@ -25,7 +25,6 @@ for data_option = 1:1
   K = params.K; D = params.D;
   TGt = params.TGt;
   num_data = params.num_data;
-  all_iterations = 5;
 
   %% Extract features
   img_list = dir(fullfile(data_path, 'img')); 
@@ -65,21 +64,21 @@ for data_option = 1:1
       end
       worldPoints = generateCheckerboardPoints(boardSize, pattern_size);
       worldPoints = [worldPoints, zeros(size(worldPoints,1),1)];
-
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       % QPEP-PnP
       [R_cam_world, t_cam_world, covR, covt] = ...
         qpep_pnp(imagePoints, worldPoints, K', true, false);
       R_cam_world = R_cam_world'; 
-      T_qpep_pnp = [R_cam_world, t_cam_world; 0 0 0 1];
+      T_cam_world = [R_cam_world, t_cam_world; 0 0 0 1];
       %%%% check if QPEP has another PNP solution
       if t_cam_world(3) > 0
-        T_qpep_pnp = [R_cam_world, t_cam_world; 0 0 0 1];
+        T_cam_world = [R_cam_world, t_cam_world; 0 0 0 1];
       else
         eul = rotm2eul(R_cam_world, 'ZYX');
         R = eul2rotm([eul(1) - pi, -eul(2), -eul(3)], 'ZYX');
-        T_qpep_pnp = [R, -t_cam_world; 0 0 0 1];
+        T_cam_world = [R, -t_cam_world; 0 0 0 1];
       end
+      T_qpep_pnp = T_cam_world;
       if debug_flag
         disp('T_qpep_pnp')
         disp(num2str(T_qpep_pnp, '%5f '))
@@ -167,6 +166,7 @@ for data_option = 1:1
   end
   
   %% QPEP-pTop based extrinsic calibration
+  all_iterations = 20;
   all_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_eulerx = zeros(all_iterations, length(all_cam_board_plane_coeff));
@@ -179,7 +179,7 @@ for data_option = 1:1
   T_est_best = eye(4, 4);
   min_r = 1000;
 %   for frame_num = 5:length(all_cam_board_plane_coeff)
-  for frame_num = length(all_cam_board_plane_coeff) - 1
+  for frame_num = 5:length(all_cam_board_plane_coeff)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
     all_eulers = zeros(3, all_iterations);
@@ -290,7 +290,6 @@ for data_option = 1:1
               target_pts = [target_pts; lbpts(:, j)'];          
               target_normals = [target_normals; [0 0 0]];
               weights = [weights; r2];              
-              
               % compute the covariance of the point-to-plane residual
               p12 = T_ref_qpep(1:3, 1:3) * lbpts(:, j) + T_ref_qpep(1:3, 4) - cbcenter_on_plane;
               std = (p12' * cbcoeff_cov * p12)^(0.5);
@@ -347,7 +346,7 @@ for data_option = 1:1
       end    
       debug_flag = 0;
       
-      % TODO: add point-to-plane registration visualization
+      % add point-to-plane registration visualization
       debug_flag = 0;
       if debug_flag
         fig = figure; hold on;
