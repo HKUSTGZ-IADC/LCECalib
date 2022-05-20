@@ -10,11 +10,11 @@ data_type = 'real_data';
 
 visualization_flag = 0;
 debug_flag = 0;
-save_result_flag = 0;
+save_result_flag = 1;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 1:1
+for data_option = 1:3
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
@@ -175,10 +175,8 @@ for data_option = 1:1
   all_tx = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_ty = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_tz = zeros(all_iterations, length(all_cam_board_plane_coeff));
-  
   T_est_best = eye(4, 4);
   min_r = 1000;
-%   for frame_num = 5:length(all_cam_board_plane_coeff)
   for frame_num = 5:length(all_cam_board_plane_coeff)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
@@ -212,8 +210,8 @@ for data_option = 1:1
         reference_pts, reference_normals, ...
         false, false, weights);
       T_ini_qpep = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
-      disp('T_ini_qpep')
-      disp(num2str(T_ini_qpep, '%5f '))
+%       disp('T_ini_qpep')
+%       disp(num2str(T_ini_qpep, '%5f '))
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -313,8 +311,8 @@ for data_option = 1:1
       end
       % After multiple iterations of refinement
       T_est = T_ref_qpep;
-      disp('T_est')
-      disp(num2str(T_est, '%5f ')) 
+%       disp('T_est')
+%       disp(num2str(T_est, '%5f ')) 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -323,11 +321,7 @@ for data_option = 1:1
       r_errs(iter) = r_err; t_errs(iter) = t_err;
       all_eulers(:, iter) = rotm2eul(T_est(1:3, 1:3), 'ZYX');
       all_tsl(:, iter) = T_est(1:3, 4);
-%       if (r_err < min_r)
-%         min_r = r_err;
-%         T_est_best = T_est;
-%       end
-      
+
       debug_flag = 0;
       if debug_flag
         figure;
@@ -372,7 +366,6 @@ for data_option = 1:1
     all_tx(:, frame_num) = all_tsl(1, :);
     all_ty(:, frame_num) = all_tsl(2, :);
     all_tz(:, frame_num) = all_tsl(3, :);
-    
     quat = quaternion(all_eulers' / pi * 180, 'eulerd', 'ZYX', 'frame');
     quatAverage = meanrot(quat);
     tslAverage = mean(all_tsl, 2);
@@ -395,24 +388,41 @@ for data_option = 1:1
   %%
   if save_result_flag
     save(fullfile(data_path, 'result_lcecalib_qpep.mat'), ...
-      'aver_r_err', 'aver_t_err', 'T_est_best', ...
-      'all_cam_board_corners', 'all_cam_board_plane_coeff', ...
+      'all_t_err', 'all_r_err', ...
+      'all_eulerx', 'all_eulery', 'all_eulerz', ...
+      'all_tx', 'all_ty', 'all_tz', ...
+      'T_est_best', ...
+      'all_cam_board_corners', ...
       'all_cam_board_centers', ...
-      'all_lidar_board_pts', 'all_lidar_board_edge_pts');
+      'all_cam_board_centers_on_plane', ...
+      'all_cam_board_plane_coeff', ...
+      'all_cam_board_plane_coeff_cov', ...
+      'all_lidar_board_pts_raw', ...
+      'all_lidar_board_pts', ...
+      'all_lidar_board_edge_pts');
 
     save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
-      'aver_r_err', 'aver_t_err', 'T_est_best', ...
-      'all_cam_board_corners', 'all_cam_board_plane_coeff', ...
+      'all_t_err', 'all_r_err', ...
+      'all_eulerx', 'all_eulery', 'all_eulerz', ...
+      'all_tx', 'all_ty', 'all_tz', ...
+      'T_est_best', ...
+      'all_cam_board_corners', ...
       'all_cam_board_centers', ...
-      'all_lidar_board_pts', 'all_lidar_board_edge_pts', ...
-      'all_img_undist', 'all_lidar_pc_array');
+      'all_cam_board_centers_on_plane', ...
+      'all_cam_board_plane_coeff', ...
+      'all_cam_board_plane_coeff_cov', ...
+      'all_lidar_board_pts_raw', ...
+      'all_lidar_board_pts', ...
+      'all_lidar_board_edge_pts', ...
+      'all_img_undist', ...
+      'all_lidar_pc_array');
   end
-
+  
   %% Plot results
   plot_result_flag = 1;
   if plot_result_flag
     figure; 
-    subplot(211); boxplot(all_r_err(:, 5: end));
+    subplot(211); boxplot(all_r_err(:, 5:end));
     xlabel("Number of Poses"); ylabel("Rotation Error [deg]");
     grid on;
     ax = gca;
@@ -420,8 +430,8 @@ for data_option = 1:1
     ax.GridAlpha = 0.3;
     set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
     box on;
-
-    subplot(212); boxplot(all_t_err(:, 5: end));
+    
+    subplot(212); boxplot(all_t_err(:, 5:end));
     xlabel("Number of Poses"); ylabel("Translation Error [m]");
     grid on;
     ax = gca;
