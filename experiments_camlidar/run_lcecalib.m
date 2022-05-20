@@ -14,7 +14,7 @@ save_result_flag = 0;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 1:1
+for data_option = 2:2
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
@@ -163,10 +163,6 @@ for data_option = 1:1
   aver_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
   T_est_best = eye(4, 4);
   min_t = 1000;
-<<<<<<< Updated upstream
-=======
-%   for frame_num = length(all_cam_board_plane_coeff)
->>>>>>> Stashed changes
   for frame_num = length(all_cam_board_plane_coeff)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
@@ -305,14 +301,19 @@ for data_option = 1:1
       if debug_flag
         figure;
         subplot(121);
-        imshow(pt_project_depth2image(T_est, K, ...
+        imshow(projectPointOnImage(T_est, K, ...
           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
         title('Projected points with Test', 'FontSize', 25);
         subplot(122);
-        imshow(pt_project_depth2image(TGt, K, ...
+        imshow(projectPointOnImage(TGt, K, ...
           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
         title('Projected points with TGt', 'FontSize', 25);
-      end         
+        
+        figure;
+        cloud_rgb = colorizePointFromImage(T_est, K, ...
+          all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)});
+      end    
+      debug_flag = 0;
       
       % TODO: add point-to-plane registration visualization
       debug_flag = 1;
@@ -328,7 +329,8 @@ for data_option = 1:1
         axis equal;
         view(40, 10);
         close(fig);
-      end              
+      end           
+      debug_flag = 0;
     end
     aver_t_err(:, frame_num) = t_errs';
     aver_r_err(:, frame_num) = r_errs';
@@ -379,6 +381,7 @@ for data_option = 1:1
     sgtitle('Mean and Median Rotation and Trnslation Error', 'FontSize', 25, ...
       'FontName', 'Times', 'FontWeight', 'normal');
   end
+  plot_result_flag = 0;
 end
 
 
