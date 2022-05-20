@@ -14,7 +14,7 @@ save_result_flag = 0;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 2:2
+for data_option = 1:1
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
@@ -25,7 +25,7 @@ for data_option = 2:2
   K = params.K; D = params.D;
   TGt = params.TGt;
   num_data = params.num_data;
-  all_iterations = 1;
+  all_iterations = 5;
 
   %% Extract features
   img_list = dir(fullfile(data_path, 'img')); 
@@ -33,7 +33,8 @@ for data_option = 2:2
   pcd_list = dir(fullfile(data_path, 'pcd'));
   pcd_list = pcd_list(3:end);  
 
-  all_cam_board_corners = {}; all_cam_board_centers = {};
+  all_cam_board_corners = {}; 
+  all_cam_board_centers = {}; all_cam_board_centers_on_plane = {};
   all_cam_board_plane_coeff = {}; all_cam_board_plane_coeff_cov = {}; 
   all_lidar_board_pts = {}; all_lidar_board_pts_raw = {};
   all_lidar_board_edge_pts = {};
@@ -68,7 +69,7 @@ for data_option = 2:2
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       % QPEP-PnP
       [R_cam_world, t_cam_world, covR, covt] = ...
-        qpep_pnp(imagePoints, worldPoints, K', false, false);
+        qpep_pnp(imagePoints, worldPoints, K', true, false);
       R_cam_world = R_cam_world'; 
       T_qpep_pnp = [R_cam_world, t_cam_world; 0 0 0 1];
       %%%% check if QPEP has another PNP solution
@@ -93,12 +94,18 @@ for data_option = 2:2
       cam_board_corners = T(1:3, 1:3) * cam_board_corners + T(1:3, 4);
       n = T(1:3,1:3) * [0,0,1]';
       d = -(n' * T(1:3,4));
-      covn = 4 *...
-        (R_cam_world * skew([0,0,1]')) * covR(2:4, 2:4) * (R_cam_world * skew([0,0,1]'))';
+      H = R_cam_world * skew([0 0 1]');
+      covn = 4 * H * covR(2:4, 2:4) * H';
       cam_board_plane_coeff = [n; d];
       if cam_board_plane_coeff(4) < 0
           cam_board_plane_coeff = -cam_board_plane_coeff;
       end 
+      
+      % project camera checkerboard center onto the checkerboar plane
+      cam_board_center = mean(cam_board_corners, 2);
+      cam_board_center_on_plane = cam_board_center;
+      cam_board_center_on_plane(3) = -((d + n(1:2)' * cam_board_center(1:2)) / n(3));
+      
       if debug_flag
         worldPx = worldpts_to_cam(worldPoints', T(1:3, 1:3), T(1:3, 4), K);
         pc_corner_px = worldpts_to_cam(cam_board_corners, eye(3, 3), zeros(3, 1), K);
@@ -147,7 +154,8 @@ for data_option = 2:2
 
       %% save feature extraction results
       all_cam_board_corners{end + 1} = cam_board_corners;
-      all_cam_board_centers{end + 1} = mean(cam_board_corners, 2);
+      all_cam_board_centers{end + 1} = cam_board_center;
+      all_cam_board_centers_on_plane{end + 1} = cam_board_center_on_plane;
       all_cam_board_plane_coeff{end + 1} = cam_board_plane_coeff;     
       all_cam_board_plane_coeff_cov{end + 1} = covn;
       
@@ -159,13 +167,23 @@ for data_option = 2:2
   end
   
   %% QPEP-pTop based extrinsic calibration
-  aver_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
-  aver_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_eulerx = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_eulery = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_eulerz = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_tx = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_ty = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_tz = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  
   T_est_best = eye(4, 4);
-  min_t = 1000;
-  for frame_num = length(all_cam_board_plane_coeff)
+  min_r = 1000;
+%   for frame_num = 5:length(all_cam_board_plane_coeff)
+  for frame_num = length(all_cam_board_plane_coeff) - 1
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
+    all_eulers = zeros(3, all_iterations);
+    all_tsl = zeros(3, all_iterations);
     for iter = 1:all_iterations  % multiple iterations
       reidx = randperm(length(all_cam_board_plane_coeff));
       
@@ -179,9 +197,9 @@ for data_option = 2:2
       for idx = 1:frame_num
         lbpts = all_lidar_board_pts{reidx(idx)};
         cbcoeff = all_cam_board_plane_coeff{reidx(idx)};
-        cbcenter = all_cam_board_centers{reidx(idx)};
+        cbcenter_on_plane = all_cam_board_centers_on_plane{reidx(idx)};
         for j = 1:length(lbpts)
-          reference_pts = [reference_pts; cbcenter'];
+          reference_pts = [reference_pts; cbcenter_on_plane'];
           reference_normals = [reference_normals; cbcoeff(1:3)'];
           target_pts = [target_pts; lbpts(:, j)'];          
           target_normals = [target_normals; [0 0 0]];
@@ -189,7 +207,7 @@ for data_option = 2:2
         end
       end     
       % QPEP-PTop using only planar constraints
-      [R_cam_lidar, t_cam_lidar, ~, ~] = qpep_pTop(...
+      [R_cam_lidar, t_cam_lidar, ~, ~, ~] = qpep_pTop(...
         target_pts, target_normals, ...
         reference_pts, reference_normals, ...
         false, false, weights);
@@ -213,16 +231,17 @@ for data_option = 2:2
         target_pts = zeros(0, 3);
         target_normals = zeros(0, 3);        
         weights = zeros(0, 1);
+        stds = zeros(0, 1);
         for idx = 1:frame_num
           lbpts = all_lidar_board_pts{reidx(idx)};
           lepts = all_lidar_board_edge_pts{reidx(idx)};
           cbcorner = all_cam_board_corners{reidx(idx)};
           cbcoeff = all_cam_board_plane_coeff{reidx(idx)};
-          cbcenter = all_cam_board_centers{reidx(idx)};          
+          cbcenter_on_plane = all_cam_board_centers_on_plane{reidx(idx)};     
+          cbcoeff_cov = all_cam_board_plane_coeff_cov{reidx(idx)};
 
           % set weights of edge and planar residuals
           r1 = 2.0 / size(lepts, 2);  % weights for edge residuals            
-%           r2 = 30 * 1.0 / length(lbpts);   % weights for planar residuals
           r2 = 1.0 / length(lbpts);   % weights for planar residuals
           
           %%%%% add edge residuals
@@ -247,6 +266,7 @@ for data_option = 2:2
               target_pts = [target_pts; lepts(:, j)'];
               target_normals = [target_normals; [0 0 0]];
               weights = [weights; r1];
+              stds = [stds; 0.0];
             end   
             debug_flag = 0;
             if debug_flag
@@ -265,24 +285,32 @@ for data_option = 2:2
           %%%%% add planar residuals
           if use_planar_flag
             for j = 1:length(lbpts)
-              reference_pts = [reference_pts; cbcenter'];
+              reference_pts = [reference_pts; cbcenter_on_plane'];
               reference_normals = [reference_normals; cbcoeff(1:3)'];
               target_pts = [target_pts; lbpts(:, j)'];          
               target_normals = [target_normals; [0 0 0]];
-              weights = [weights; r2];
+              weights = [weights; r2];              
+              
+              % compute the covariance of the point-to-plane residual
+              p12 = T_ref_qpep(1:3, 1:3) * lbpts(:, j) + T_ref_qpep(1:3, 4) - cbcenter_on_plane;
+              std = (p12' * cbcoeff_cov * p12)^(0.5);
+              stds = [stds; std];
             end      
           end        
         end
+        % remove outlier data
+        stds_sort = sort(stds, 'ascend');
+        std_threshold = stds_sort(floor(length(stds_sort) * 0.9));
+        weights(stds >= std_threshold) = 0;
+        
         % QPEP-PTop using both edge and planar constraints
-        [R_cam_lidar, t_cam_lidar, ~, ~] = qpep_pTop(...
+        [R_cam_lidar, t_cam_lidar, ~, ~, ~] = qpep_pTop(...
           target_pts, target_normals, ...
           reference_pts, reference_normals, ...
           false, false, weights);
         T_ref_qpep = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
-        disp('T_ref_qpep')
-        disp(num2str(T_ref_qpep, '%5f '))
-        disp('TGt')
-        disp(num2str(TGt, '%5f '))
+%         disp('T_ref_qpep')
+%         disp(num2str(T_ref_qpep, '%5f '))
       end
       % After multiple iterations of refinement
       T_est = T_ref_qpep;
@@ -290,14 +318,18 @@ for data_option = 2:2
       disp(num2str(T_est, '%5f ')) 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      % Result Evaluation and Visualization
       [r_err, t_err] = evaluateTFError(TGt, T_est);
       r_errs(iter) = r_err; t_errs(iter) = t_err;
-      if (t_err < min_t)
-        min_t = t_err;
-        T_est_best = T_est;
-      end
+      all_eulers(:, iter) = rotm2eul(T_est(1:3, 1:3), 'ZYX');
+      all_tsl(:, iter) = T_est(1:3, 4);
+%       if (r_err < min_r)
+%         min_r = r_err;
+%         T_est_best = T_est;
+%       end
       
-      debug_flag = 1;
+      debug_flag = 0;
       if debug_flag
         figure;
         subplot(121);
@@ -316,7 +348,7 @@ for data_option = 2:2
       debug_flag = 0;
       
       % TODO: add point-to-plane registration visualization
-      debug_flag = 1;
+      debug_flag = 0;
       if debug_flag
         fig = figure; hold on;
         lbpts_cam = T_est(1:3, 1:3) * lbpts + T_est(1:3, 4);  % 3xN
@@ -331,16 +363,37 @@ for data_option = 2:2
         close(fig);
       end           
       debug_flag = 0;
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     end
-    aver_t_err(:, frame_num) = t_errs';
-    aver_r_err(:, frame_num) = r_errs';
+    all_t_err(:, frame_num) = t_errs';
+    all_r_err(:, frame_num) = r_errs';
+    all_eulerz(:, frame_num) = all_eulers(1, :) / pi * 180;
+    all_eulery(:, frame_num) = all_eulers(2, :) / pi * 180;
+    all_eulerx(:, frame_num) = all_eulers(3, :) / pi * 180;
+    all_tx(:, frame_num) = all_tsl(1, :);
+    all_ty(:, frame_num) = all_tsl(2, :);
+    all_tz(:, frame_num) = all_tsl(3, :);
+    
+    quat = quaternion(all_eulers' / pi * 180, 'eulerd', 'ZYX', 'frame');
+    quatAverage = meanrot(quat);
+    tslAverage = mean(all_tsl, 2);
+    T_est = eye(4, 4);
+    T_est(1:3, 1:3) = quat2rotm(quatAverage);
+    T_est(1:3, 4) = tslAverage;
+    [r_err, ~] = evaluateTFError(TGt, T_est);
+    if (r_err < min_r)
+      min_r = r_err;
+      T_est_best = T_est;
+    end
     sprintf('Number of frames used for calibration: %d', frame_num)    
-    disp('T_est_best')
-    disp(num2str(T_est_best, '%5f '))    
-    disp('TGt')
-    disp(num2str(TGt, '%5f '))    
   end
+  disp('T_est_best')
+  disp(num2str(T_est_best, '%5f '))    
+  disp('TGt')
+  disp(num2str(TGt, '%5f '))    
+  [r_err, t_err] = evaluateTFError(TGt, T_est_best)
   
+  %%
   if save_result_flag
     save(fullfile(data_path, 'result_lcecalib_qpep.mat'), ...
       'aver_r_err', 'aver_t_err', 'T_est_best', ...
@@ -360,7 +413,7 @@ for data_option = 2:2
   plot_result_flag = 1;
   if plot_result_flag
     figure; 
-    subplot(211); boxplot(aver_r_err(:, 5: end));
+    subplot(211); boxplot(all_r_err(:, 5: end));
     xlabel("Number of Poses"); ylabel("Rotation Error [deg]");
     grid on;
     ax = gca;
@@ -369,7 +422,7 @@ for data_option = 2:2
     set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
     box on;
 
-    subplot(212); boxplot(aver_t_err(:, 5: end));
+    subplot(212); boxplot(all_t_err(:, 5: end));
     xlabel("Number of Poses"); ylabel("Translation Error [m]");
     grid on;
     ax = gca;

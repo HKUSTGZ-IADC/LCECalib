@@ -32,7 +32,8 @@
 %   covR     : covariance matrix of quaternion
 %   covt     : covariance matrix of translation
 
-function [Rest, test, covR, covt] = qpep_pnp(image_pt0, world_pt0, K, comp_cov, plot_flag)
+function [Rest, test, covR, covt] = ...
+  qpep_pnp(image_pt0, world_pt0, K, comp_cov, plot_flag)
 
 use_p3p = false;
 len = size(world_pt0, 1);
@@ -75,7 +76,7 @@ test = X_(1:3, 4);
 
 %% compute covariance
 if comp_cov
-  num = 100;
+  num = 10;
   world_noise = 1e-2;
   image_noise = 1e-0;
 
@@ -298,7 +299,7 @@ if comp_cov
       epsQuat = scaling * 1e-15;
 
       [XX, ff] = optimize_quat_cov(AA, bb, q, F, scaling * cov_left, epsX, epsQuat, solver, verbose);
-      ff = ff / scaling^2
+      ff = ff / scaling^2;
       scale = abs(norm(cov_left, 'fro') / norm(F * XX * F.', 'fro'));
       XX * scale;
       Sigma_q_stat;

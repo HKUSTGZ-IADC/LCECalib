@@ -14,13 +14,13 @@
 
 1. The computed covariance does not fit well with Monte Carlo sampling
 
-<img src="figure/qpep_pnp_covariance.jpg" style="zoom:67%;" /> 
+<img src="figure/qpep_pnp_covariance.jpg" style="zoom: 33%;" /> 
 
 ### Covariance of quaternion from QPEP-PTop
 
 1. The computed covariance fits well with Monte Carlo sampling
 
-<img src="figure/qpep_pTop_covariance.jpg" style="zoom:67%;" /> 
+<img src="figure/qpep_pTop_covariance.jpg" style="zoom: 33%;" /> 
 
 ### Extrinsic Calibration Results
 
@@ -34,13 +34,17 @@
 
 <img src="figure/projected_point_est.jpg" style="zoom: 25%;" /> **estimated extrinsics**
 
-<img src="figure/projected_point_gt.jpg" style="zoom:33%;" />**GT extrinsics**
+<img src="figure/projected_point_gt.jpg" style="zoom: 25%;" />**GT extrinsics**
 
 3. Visualization of planar LiDAR point cloud on the checkerboard in camera frame
 
-<img src="figure/qpep_pTop_aligned_points.jpg" style="zoom: 33%;" />
+<img src="figure/qpep_pTop_aligned_points.jpg" style="zoom: 25%;" />
 
+### Issues of Current Solutions
 
+1. The rotation error does not reduce --- a bottleneck -> solution: analyze the point-to-plane error equation
+   1. S1: project checkerboard point in camera onto the checkerboard plane 
+   2. S2: model the uncertainty of the normal
 
 
 

@@ -24,7 +24,7 @@
 %   r0  (Nx3): target point cloud to be transformed 
 %   nvr (Nx3): normal of the target point cloud
 %   b0  (Nx3): reference point cloud 
-%   nvb (Nx3): normal of the reference point cloud
+%   nvb (Nx3): normal of the target point cloud
 %   plot_flag: plot figures (true)
 % output:
 %   Rest     : estimated rotation matrix 
@@ -73,12 +73,11 @@ test = X_(1:3, 4);
 mean_residual = 0;
 len = size(r0, 1);
 for i = 1 : len
-  rr = r0(i, :).';
-  bb = b0(i, :).';
-  nn = nvb(i, :).';
-  mean_residual = mean_residual + abs(weights(i) * nn' * (Rest * rr + test - bb));
+  rr = r(i, :).';
+  bb = b(i, :).';
+  nn = nv(i, :).';
+  coef_J_pure = coef_J_pure + weights(i) * 
 end
-mean_residual = mean_residual / len;
 
 
 %% Monte-carlo sampling to compute covariance 
