@@ -13,8 +13,8 @@ visualization_flag = false;
 TInit = [0 -1 0 0.12; 0 0 -1 -0.05; 1 0 0 -0.03];
 
 %%
-data_type = 'handheld_data';
-data_fold = {'real_data_1'};
+data_type = 'data/fp_data';
+data_fold = {'fp_data_1'};
 sensor_type = {'frame_img', 'event_img'};
 
 for data_option = 1:1

@@ -5,8 +5,9 @@ add_path_qpep;
 
 format short
 
-data_type = 'real_data';
+% data_type = 'real_data';
 % data_type = 'simu_data';
+data_type = 'fp_data';
 
 visualization_flag = 0;
 debug_flag = 0;
@@ -14,11 +15,11 @@ save_result_flag = 1;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 1:3
+for data_option = 1:1
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
-  params = load(fullfile(data_path, 'params.mat'));
+  params = load(fullfile(data_path, 'img/params.mat'));
   borW = params.borW; borH = params.borH; 
   numW = params.numW; numH = params.numH;
   pattern_size = params.pattern_size;
@@ -39,9 +40,17 @@ for data_option = 1:3
   all_lidar_board_edge_pts = {};
   all_lidar_board_corners = {}; all_lidar_board_plane_coeff = {};
   all_img_undist = {}; all_lidar_pc_array = {};
-  for idx = 1:min(60, num_data)
-      img_file = strcat(img_list(idx).folder, '/', img_list(idx).name);
+  for idx = 1:min(length(pcd_list), min(num_data, 60))
       pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
+      if (~exist(pcd_file)) 
+        continue;
+      end
+      ss = split(pcd_list(idx).name, '.');
+      img_file = strcat(fullfile(data_path, 'img'), '/', ss{1}, '.png');
+      if (~exist(img_file)) 
+        continue;
+      end           
+      
       img_raw = imread(img_file);
       pc_raw = pcread(pcd_file);
       lidar_pc_array = pc_raw.Location()';
@@ -166,7 +175,7 @@ for data_option = 1:3
   end
   
   %% QPEP-pTop based extrinsic calibration
-  all_iterations = 20;
+  all_iterations = 10;
   all_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_eulerx = zeros(all_iterations, length(all_cam_board_plane_coeff));
@@ -177,7 +186,10 @@ for data_option = 1:3
   all_tz = zeros(all_iterations, length(all_cam_board_plane_coeff));
   T_est_best = eye(4, 4);
   min_r = 1000;
-  for frame_num = 5:length(all_cam_board_plane_coeff)
+  use_edge_flag = params.use_edge_flag;
+  use_planar_flag = params.use_planar_flag;
+%   for frame_num = 5:length(all_cam_board_plane_coeff)
+  for frame_num = length(all_cam_board_plane_coeff)-1 :length(all_cam_board_plane_coeff)-1
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
     all_eulers = zeros(3, all_iterations);
@@ -217,12 +229,6 @@ for data_option = 1:3
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       % Refinement
       T_ref_qpep = T_ini_qpep;
-      if num_data >= 15
-        use_edge_flag = 0;
-      else
-        use_edge_flag = 1;
-      end
-      use_planar_flag = 1;
       for iter_ref = 1:5
         reference_pts = zeros(0, 3);
         reference_normals = zeros(0, 3);
@@ -333,7 +339,6 @@ for data_option = 1:3
         imshow(projectPointOnImage(TGt, K, ...
           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
         title('Projected points with TGt', 'FontSize', 25);
-        
         figure;
         cloud_rgb = colorizePointFromImage(T_est, K, ...
           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)});
@@ -346,10 +351,11 @@ for data_option = 1:3
         fig = figure; hold on;
         lbpts_cam = T_est(1:3, 1:3) * lbpts + T_est(1:3, 4);  % 3xN
         lepts_cam = T_est(1:3, 1:3) * lepts + T_est(1:3, 4);  % 3xN
-        plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g*'); 
+        plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g.'); 
+        plot3(corre_cbedge(1, :), corre_cbedge(2, :), corre_cbedge(3, :), 'bo', 'MarkerSize', 12);
         plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r.', 'MarkerSize', 6);
-        plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'bo', 'MarkerSize', 12);
-        legend('cam edge pts', 'cam corre edge pts', 'lidar edge pts');
+        plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'ro', 'MarkerSize', 12);
+        legend('cam edge pts', 'cam corre edge pts', 'lidar board pts', 'lidar edge pts');
         hold off;
         axis equal;
         view(40, 10);
