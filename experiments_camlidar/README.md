@@ -6,12 +6,11 @@ LiDAR-Camera Extrinsic Calibration
 
    > real_data/real_data_1
    >
-   > ​	img/1.png, img/2.png, ...: calibration images
+   > ​	img/(1, 2, 3, ...).png: calibration images
    >
-   > ​	pcd/1.pcd, pcd/2.pcd, ...: calibration board point clouds 
+   > ​	pcd/(1, 2, 3, ...).pcd: calibration board point clouds 
    >
-   > ​	raw_pcd/1.pcd, raw_pcd/2.pcd, ...: calibration raw point clouds 
-
+   
 2. please prepare camera intrinsics, board hyperparameters of the code
 
    * calibrate intrinsics of the camera using prepared data
@@ -28,8 +27,12 @@ LiDAR-Camera Extrinsic Calibration
 
 ### How to Calibration
 
-1. Run *multiframe_simu_data.m* and *multiframe_real_data.m* to calibrate simulated sensors and real-world sensors respectively (using the proposed method). Results are saved as *result_proposed.mat* in the data folder
-2. Run *baseline_multiframe* to calibrate sensors (using the baseline method [Zhou2018Automatic]). Results are saved as *result_baseline.mat* in the data folder
+1. **Version 1 of LCECalib**
+   1. Run *multiframe_simu_data.m* and *multiframe_real_data.m* to calibrate simulated sensors and real-world sensors respectively (using the proposed method). Results are saved as *result_proposed.mat* in the data folder
+   2. Run *baseline_multiframe* to calibrate sensors (using the baseline method [Zhou2018Automatic]). Results are saved as *result_baseline.mat* in the data folder
+2. **Version 2 of LCECalib** (utilize QPEP to solve the PnP and Point-To-Plane registration problem)
+   1. set *data_type* for *simu_data*, *simu_data_bias*, *real_data*, *fp_data*
+   2. Run *run_lcecalib.m* to calibrate sensors
 
 ### How to Analyze Results
 
