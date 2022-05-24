@@ -5,9 +5,9 @@ add_path_qpep;
 
 format short
 
-data_type = 'real_data';
+% data_type = 'real_data';
 % data_type = 'simu_data';
-% data_type = 'fp_data';
+data_type = 'fp_data';
 
 visualization_flag = 0;
 debug_flag = 0;
@@ -15,7 +15,7 @@ save_result_flag = 1;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 2:3
+for data_option = 1:1
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
@@ -45,15 +45,17 @@ for data_option = 2:3
   run_lcecalib_fe();
   
   %% QPEP-pTop based extrinsic calibration
-  all_iterations = 10;
-  edge_iterations = 3;
-  run_lcecalib_opt(all_iterations, edge_iterations); 
+  all_iterations = 20;
+  edge_iterations = 5;
+  start_frame = 1;
+  end_frame = num_data;
+  run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_frame); 
   load('tmp_lcecalib_opt.mat');
   
   %%
   if save_result_flag
     save(fullfile(data_path, 'result_lcecalib_qpep.mat'), ...
-      'all_t_err', 'all_r_err', ...
+      'all_t_err', 'all_r_err', 'all_mp_err', ...
       'all_eulerx', 'all_eulery', 'all_eulerz', ...
       'all_tx', 'all_ty', 'all_tz', ...
       'T_est_best', ...
@@ -67,7 +69,7 @@ for data_option = 2:3
       'all_lidar_board_edge_pts');
 
     save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
-      'all_t_err', 'all_r_err', ...
+      'all_t_err', 'all_r_err', 'all_mp_err', ...
       'all_eulerx', 'all_eulery', 'all_eulerz', ...
       'all_tx', 'all_ty', 'all_tz', ...
       'T_est_best', ...
@@ -87,27 +89,75 @@ for data_option = 2:3
   plot_result_flag = 1;
   if plot_result_flag
     figure; 
-    subplot(211); boxplot(all_r_err(:, 5:end));
-    xlabel("Number of Poses"); ylabel("Rotation Error [deg]");
+%     subplot(211); boxplot(all_r_err(start_frame:end));
+    subplot(311); plot(all_r_err(start_frame:end), 'r-o', ...
+      'MarkerSize', 15, 'LineWidth', 3);
+%     xlabel("Number of Poses"); 
+    ylabel("Rotation Error [deg]");
     grid on;
     ax = gca;
     ax.GridLineStyle = '--';
     ax.GridAlpha = 0.3;
-    set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
+    set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
     box on;
     
-    subplot(212); boxplot(all_t_err(:, 5:end));
-    xlabel("Number of Poses"); ylabel("Translation Error [m]");
+%     subplot(212); boxplot(all_t_err(start_frame:end));
+    subplot(312); plot(all_t_err(start_frame:end), 'r-o', ...
+      'MarkerSize', 15, 'LineWidth', 3);
+%     xlabel("Number of Poses"); 
+    ylabel("Translation Error [m]");
     grid on;
     ax = gca;
     ax.GridLineStyle = '--';
     ax.GridAlpha = 0.3;
-    set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
+    set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
     box on;
     
-    sgtitle('Mean and Median Rotation and Trnslation Error', 'FontSize', 25, ...
+    subplot(313); plot(all_mp_err(start_frame:end), 'b-d', ...
+      'MarkerSize', 15, 'LineWidth', 3);
+    xlabel("Number of Poses"); ylabel("Planar Error [m]");
+    grid on;
+    ax = gca;
+    ax.GridLineStyle = '--';
+    ax.GridAlpha = 0.3;
+    set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
+    box on;    
+    
+    sgtitle('Mean Rotation, Translation, and Planar Error', 'FontSize', 30, ...
       'FontName', 'Times', 'FontWeight', 'normal');
   end
+  
+  if plot_result_flag
+    figure;
+    subplot(121);
+    imshow(projectPointOnImage(T_est_best, K, ...
+      all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
+    title('Projected points with Test', 'FontSize', 25);
+    subplot(122);
+    imshow(projectPointOnImage(TGt, K, ...
+      all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
+    title('Projected points with TGt', 'FontSize', 25);
+    figure;
+    cloud_rgb = colorizePointFromImage(T_est, K, ...
+      all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)});    
+    pcwrite(cloud_rgb, '/tmp/cloud_rgb.pcd');
+  end
+  
+  if plot_result_flag
+    figure; hold on;
+    lbpts = all_lidar_board_pts{reidx(1)};
+    lepts = all_lidar_board_edge_pts{reidx(1)};
+    cbcorner = all_cam_board_corners{reidx(1)};
+    [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
+    lbpts_cam = T_est_best(1:3, 1:3) * lbpts + T_est_best(1:3, 4);  % 3xN
+    lepts_cam = T_est_best(1:3, 1:3) * lepts + T_est_best(1:3, 4);  % 3xN
+    plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g.'); 
+    plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r.', 'MarkerSize', 6);
+    plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'ro', 'MarkerSize', 12);
+    legend('cam edge pts', 'lidar board pts', 'lidar edge pts');
+    hold off; axis equal; view(40, 10);
+  end
+  
   plot_result_flag = 0;
 end
 
