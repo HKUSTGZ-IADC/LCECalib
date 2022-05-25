@@ -49,7 +49,7 @@ TGt = [0.77764     -0.62867    0.0066632   -0.0083745
                0            0          0           1];
 squareSize = 70; 
 checkerboardPadding = [137, 136];
-num_data = 12;
+num_data = 40;
 imageWidth = 1280;
 imageHeight = 720;
 numH = 7;
