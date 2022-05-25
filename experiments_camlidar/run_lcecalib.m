@@ -11,7 +11,7 @@ data_type = 'real_data';
 
 visualization_flag = 0;
 debug_flag = 0;
-save_result_flag = 1;
+save_result_flag = 0;
 plot_result_flag = 0;
 
 %% load data and extract features
@@ -55,7 +55,7 @@ for data_option = 1:3
   %%
   if save_result_flag
     save(fullfile(data_path, 'result_lcecalib_qpep.mat'), ...
-      'all_t_err', 'all_r_err', 'all_p_err', ...
+      'all_t_err', 'all_r_err', 'all_mp_err', ...
       'all_eulerx', 'all_eulery', 'all_eulerz', ...
       'all_tx', 'all_ty', 'all_tz', ...
       'T_est_best', ...
@@ -69,7 +69,7 @@ for data_option = 1:3
       'all_lidar_board_edge_pts');
 
     save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
-      'all_t_err', 'all_r_err', 'all_p_err', ...
+      'all_t_err', 'all_r_err', 'all_mp_err', ...
       'all_eulerx', 'all_eulery', 'all_eulerz', ...
       'all_tx', 'all_ty', 'all_tz', ...
       'T_est_best', ...
@@ -89,56 +89,48 @@ for data_option = 1:3
   plot_result_flag = 1;
   if plot_result_flag
     figure; 
-%     subplot(211); boxplot(all_r_err(start_frame:end));
     subplot(311); plot(all_r_err(start_frame:end), 'r-o', ...
       'MarkerSize', 15, 'LineWidth', 3);
-%     xlabel("Number of Poses"); 
     ylabel("Rotation Error [deg]");
     grid on;
-    ax = gca;
-    ax.GridLineStyle = '--';
-    ax.GridAlpha = 0.3;
+    ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3;
     set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
     box on;
     
-%     subplot(212); boxplot(all_t_err(start_frame:end));
     subplot(312); plot(all_t_err(start_frame:end), 'r-o', ...
       'MarkerSize', 15, 'LineWidth', 3);
 %     xlabel("Number of Poses"); 
     ylabel("Translation Error [m]");
     grid on;
-    ax = gca;
-    ax.GridLineStyle = '--';
-    ax.GridAlpha = 0.3;
+    ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3;    
     set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
     box on;
     
-    subplot(313); plot(all_p_err(start_frame:end), 'b-d', ...
+    subplot(313); plot(all_mp_err(start_frame:end), 'b-d', ...
       'MarkerSize', 15, 'LineWidth', 3);
     xlabel("Number of Poses"); ylabel("Planar Error [m]");
     grid on;
-    ax = gca;
-    ax.GridLineStyle = '--';
-    ax.GridAlpha = 0.3;
+    ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3;
     set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
     box on;    
-    
+
     sgtitle('Mean Rotation, Translation, and Planar Error', 'FontSize', 30, ...
       'FontName', 'Times', 'FontWeight', 'normal');
   end
   
+  idx = 6;
   if plot_result_flag
     figure;
     subplot(121);
     imshow(projectPointOnImage(T_est_best, K, ...
-      all_lidar_pc_array{reidx(3)}, all_img_undist{reidx(3)}));
+      all_lidar_pc_array{reidx(idx)}, all_img_undist{reidx(idx)}));
     title('Projected points with Test', 'FontSize', 25);
     subplot(122);
     imshow(projectPointOnImage(TGt, K, ...
-      all_lidar_pc_array{reidx(3)}, all_img_undist{reidx(3)}));
+      all_lidar_pc_array{reidx(idx)}, all_img_undist{reidx(idx)}));
     title('Projected points with TGt', 'FontSize', 25);
     cloud_rgb = colorizePointFromImage(T_est, K, ...
-      all_lidar_pc_array{reidx(3)}, all_img_undist{reidx(3)});    
+      all_lidar_pc_array{reidx(idx)}, all_img_undist{reidx(idx)});    
     pcwrite(cloud_rgb, '/tmp/cloud_rgb.pcd');
   end
   

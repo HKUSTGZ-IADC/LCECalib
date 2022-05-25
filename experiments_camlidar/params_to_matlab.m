@@ -121,7 +121,7 @@ checkerboardPadding = [120, 124];
 num_data = 63;
 imageWidth = 346;
 imageHeight = 260;
-use_edge_flag = 0; 
+use_edge_flag = 1; 
 use_planar_flag = 1;
 save('data/real_data/real_data_6/img/params.mat', 'K', 'D', 'borH', 'borW', ...
   'numH', 'numW', 'pattern_size', 'squareSize', ...
@@ -180,7 +180,7 @@ checkerboardPadding = [120, 124];
 num_data = 35;
 imageWidth = 346;
 imageHeight = 260;
-use_edge_flag = 0; 
+use_edge_flag = 1; 
 use_planar_flag = 1;
 save('data/fp_data/fp_data_1/event_img/params.mat', 'K', 'D', 'borH', 'borW', ...
   'numH', 'numW', 'pattern_size', 'squareSize', ...
