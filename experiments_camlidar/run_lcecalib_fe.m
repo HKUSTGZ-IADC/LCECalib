@@ -7,7 +7,8 @@ function run_lcecalib_fe()
   all_lidar_board_pts = {}; all_lidar_board_pts_raw = {};
   all_lidar_board_edge_pts = {};
   all_lidar_board_corners = {}; all_lidar_board_plane_coeff = {};
-  all_img_undist = {}; all_lidar_pc_array = {};
+  all_img_undist = {}; 
+  all_lidar_pc_array = {}; all_lidar_pc_array_raw = {};
   for idx = 1:min(length(pcd_list), min(num_data, 60))
     if strcmp(data_type, 'fp_data')
       pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
@@ -25,13 +26,20 @@ function run_lcecalib_fe()
         continue;
       end     
     else
-      pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
+      if ~(contains(img_list(idx).name, '.png') ...
+        || contains(img_list(idx).name, '.jpg'))
+        continue;
+      end
       img_file = strcat(img_list(idx).folder, '/', img_list(idx).name);
+      pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
+      pcd_raw_file = strcat(pcd_raw_list(idx).folder, '/', pcd_raw_list(idx).name);
     end
       
     img_raw = imread(img_file);
-    pc_raw = pcread(pcd_file);
-    lidar_pc_array = pc_raw.Location()';
+    pc = pcread(pcd_file);
+    lidar_pc_array = pc.Location()';
+    pc_raw = pcread(pcd_raw_file);
+    lidar_pc_array_raw = pc_raw.Location()';
 
     %% image: feature extraction
     [img_undist, camParams] = undistort_image(img_raw, K, D);
@@ -92,18 +100,24 @@ function run_lcecalib_fe()
     cam_board_center_on_plane = cam_board_center;
     cam_board_center_on_plane(3) = -((d + n(1:2)' * cam_board_center(1:2)) / n(3));
 
+    debug_flag = 0;
     if debug_flag
       worldPx = worldpts_to_cam(worldPoints', T(1:3, 1:3), T(1:3, 4), K);
       pc_corner_px = worldpts_to_cam(cam_board_corners, eye(3, 3), zeros(3, 1), K);
       pc_corner_px(:, size(pc_corner_px, 2) + 1) = pc_corner_px(:, 1);       
-      figure; 
+      fig = figure(1); 
       subplot(121); imshow(img_raw);
       subplot(122); imshow(img_undist);
       hold on;
       plot(worldPx(1,:), worldPx(2,:), '.r');
       plot(pc_corner_px(1,:), pc_corner_px(2,:), '-ob');
       hold off;
+%       subplot(133); 
+%       tmp_corners = cam_board_corners;
+%       tmp_corners(:, size(cam_board_corners, 2) + 1) = cam_board_corners(:, 1);
+%       plot3(tmp_corners(1, :), tmp_corners(2, :), tmp_corners(3, :), '-ob');
       sgtitle('Projected 3D corners and patterns');
+%       close(fig);
     end
 
     %% lidar: feature extraction     
@@ -150,6 +164,7 @@ function run_lcecalib_fe()
     all_lidar_board_edge_pts{end + 1} = lidar_board_edge_pts(1:3, :);
     all_img_undist{end + 1} = img_undist;
     all_lidar_pc_array{end + 1} = lidar_pc_array;   
+    all_lidar_pc_array_raw{end + 1} = lidar_pc_array_raw;
   end  
   save('tmp_lcecalib_fe.mat');
 %   save('tmp_lcecalib_fe.mat', ...

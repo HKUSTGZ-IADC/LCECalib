@@ -10,18 +10,16 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   all_tx = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_ty = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_tz = zeros(all_iterations, length(all_cam_board_plane_coeff));
-  T_est_best = eye(4, 4);
+
+  %%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Initialization
+  T_ini_best = eye(4, 4);
   min_error = 1000000;
-  
-  for frame_num = start_frame :min(length(all_cam_board_plane_coeff), end_frame)
-    r_errs = zeros(1, all_iterations); 
-    t_errs = zeros(1, all_iterations);
-    all_eulers = zeros(3, all_iterations);
-    all_tsl = zeros(3, all_iterations);
-    for iter = 1:all_iterations  % multiple iterations
+  for frame_num = floor(length(all_cam_board_plane_coeff) * 0.3) ...
+      :min(length(all_cam_board_plane_coeff), end_frame)  
+    for iter = 1:5  % multiple iterations to try different combinations
       reidx = randperm(length(all_cam_board_plane_coeff));
-      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      % Initialization
       reference_pts = zeros(0, 3);
       reference_normals = zeros(0, 3);
       target_pts = zeros(0, 3);
@@ -45,13 +43,37 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
         reference_pts, reference_normals, ...
         false, false, weights);
       T_ini_qpep = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
-%       disp('T_ini_qpep')
-%       disp(num2str(T_ini_qpep, '%5f '))
-      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      
-      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      % Refinement
-      T_ref_qpep = T_ini_qpep;
+      p_err = zeros(2, length(all_cam_board_centers_on_plane));
+      for i = 1:length(all_cam_board_centers_on_plane)
+        [p_err(1, i), p_err(2, i)] = evaluateTotalPlanarError(T_ini_qpep, ...
+          all_cam_board_plane_coeff{i}, ...
+          all_lidar_board_pts{i});
+      end
+      mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
+%       sprintf('iteration: %d, mp_err: %f', iter, mp_err)
+      if (mp_err < min_error)
+        min_error = mp_err;
+        T_ini_best = T_ini_qpep;
+      end    
+    end
+  end
+  disp('T_ini_best')
+  disp(num2str(T_ini_best, '%5f '))  
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  %%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Refinement
+  T_est_best = eye(4, 4);
+  min_error = 1000000;
+  for frame_num = start_frame :min(length(all_cam_board_plane_coeff), end_frame)
+    r_errs = zeros(1, all_iterations); 
+    t_errs = zeros(1, all_iterations);
+    all_eulers = zeros(3, all_iterations);
+    all_tsl = zeros(3, all_iterations);
+    for iter = 1:all_iterations  % multiple iterations to try different combinations
+      reidx = randperm(length(all_cam_board_plane_coeff));
+      T_ref_qpep = T_ini_best;
       for iter_ref = 1:edge_iterations
         reference_pts = zeros(0, 3);
         reference_normals = zeros(0, 3);
@@ -68,8 +90,8 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
           cbcoeff_cov = all_cam_board_plane_coeff_cov{reidx(idx)};
 
           % set weights of edge and planar residuals
-          r1 = 3.0 / size(lepts, 2);  % weights for edge residuals            
-          r2 = 1.0 / length(lbpts);   % weights for planar residuals
+          r1 = edge_weight / size(lepts, 2);  % weights for edge residuals            
+          r2 = planar_weight / length(lbpts);   % weights for planar residuals
           
           %%%%% add edge residuals
           [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
@@ -204,11 +226,11 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
     
     p_err = zeros(2, length(all_cam_board_centers_on_plane));
     for i = 1:length(all_cam_board_centers_on_plane)
-      [p_err(1, i), p_err(2, i)] = evaluatePlanarError(T_est, ...
+      [p_err(1, i), p_err(2, i)] = evaluateTotalPlanarError(T_est, ...
         all_cam_board_plane_coeff{i}, ...
         all_lidar_board_pts{i});
     end
-    mp_err = (p_err(1, :) * p_err(2, :)') / sum(p_err(2, :));
+    mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
     if (mp_err < min_error)
       min_error = mp_err;
       T_est_best = T_est;
@@ -220,6 +242,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   disp(num2str(T_est_best, '%5f '))    
   disp('TGt')
   disp(num2str(TGt, '%5f '))    
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   % output calibration errors
   [r_err, t_err] = evaluateTFError(TGt, T_est_best);
@@ -228,12 +251,12 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
 
   tmp_p_err = zeros(2, length(all_cam_board_centers_on_plane));
   for i = 1:length(all_cam_board_centers_on_plane)
-    [tmp_p_err(1, i), tmp_p_err(2, i)] = evaluatePlanarError(T_est_best, ...
+    [tmp_p_err(1, i), tmp_p_err(2, i)] = evaluateTotalPlanarError(T_est_best, ...
       all_cam_board_plane_coeff{i}, ...
       all_lidar_board_pts{i});
   end
-  tmp_mp_err = (tmp_p_err(1, :) * tmp_p_err(2, :)') / sum(tmp_p_err(2, :));
-  sprintf('mean planar err: %f', tmp_mp_err)
+  tmp_mp_err = sum(tmp_p_err(1, :)) / sum(tmp_p_err(2, :));
+  sprintf('mean planar error of final estimated TF: %f', tmp_mp_err)
   save('tmp_lcecalib_opt.mat');
 end
 

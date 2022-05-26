@@ -1,7 +1,13 @@
 function img_out = projectPointOnImage(transformation,K,pts_in,img_rgb,color)
 
-img_out = img_rgb;
-
+if (size(img_rgb, 3) == 1)
+  img_out = uint8(zeros(size(img_rgb, 1), size(img_rgb, 2), 3));
+  img_out(:, :, 1) = img_rgb;
+  img_out(:, :, 2) = img_rgb;
+  img_out(:, :, 3) = img_rgb;
+else
+  img_out = img_rgb;
+end
 pts_in = [pts_in;ones(1,size(pts_in,2))];
 pts_trans = transformation*pts_in;
 idx = find(pts_trans(3,:)>0);
