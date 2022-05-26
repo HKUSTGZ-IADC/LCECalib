@@ -5,8 +5,9 @@ add_path_qpep;
 
 format short
 
-data_type = 'real_data';
+% data_type = 'simu_data_bias';
 % data_type = 'simu_data';
+% data_type = 'real_data';
 % data_type = 'fp_data';
 
 visualization_flag = 0;
