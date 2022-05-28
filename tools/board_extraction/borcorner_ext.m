@@ -45,6 +45,8 @@ for idx=1:size(theta,2)
         TInit=Ttmp;
     end
 end
+
+%%
 plane_coeff = plane_ransac(bor_pts(1:3, :),0.03);
 qn = plane_coeff(1:3);
 pts_onboard=[];

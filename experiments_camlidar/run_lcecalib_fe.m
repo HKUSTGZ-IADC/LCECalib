@@ -15,6 +15,7 @@ function run_lcecalib_fe()
       if (~exist(pcd_file)) 
         continue;
       end
+      pcd_raw_file = strcat(pcd_raw_list(idx).folder, '/', pcd_raw_list(idx).name);
       ss = split(pcd_list(idx).name, '.pcd');
       img_file1 = strcat(fullfile(data_path, 'img'), '/', ss{1}, '.png');
       img_file2 = strcat(fullfile(data_path, 'img'), '/', ss{1}, '.jpg');
@@ -120,36 +121,60 @@ function run_lcecalib_fe()
 %       close(fig);
     end
 
-    %% lidar: feature extraction     
+    %% lidar: feature extraction        
     % extract board points
-    [lidar_board_pts, lidar_board_plane_coeff, err] = ...
+    [lidar_board_pts, ~, err] = ...
       boardpts_ext(lidar_pc_array, borW, borH, data_type);
     lidar_board_pts_raw = lidar_board_pts;
     if (isempty(lidar_board_pts))
       continue;
     end
+    
     % extract edge points
-    lidar_board_edge_pts_idx = find_pts_ring_edges(lidar_board_pts);
-    lidar_board_edge_pts = lidar_board_pts(:, lidar_board_edge_pts_idx);
+    [lidar_board_plane_coeff, inlierIdx] = plane_ransac(lidar_board_pts(1:3, :), 0.03);
+    qn = lidar_board_plane_coeff(1:3);
+    pts_onboard = [];
+    for idx = 1:size(lidar_board_pts, 2)
+      pt = lidar_board_pts(1:3, idx);
+      ptonboard =[0,0,-lidar_board_plane_coeff(4) / lidar_board_plane_coeff(3)]';
+      vec = pt - ptonboard;
+      a = qn'*vec*qn;
+      pts_onboard = [pts_onboard, [vec - a + ptonboard; lidar_board_pts(4, idx)]];
+    end
+    lidar_board_edge_pts_idx = find_pts_ring_edges(pts_onboard);
+    lidar_board_edge_pts = pts_onboard(:, lidar_board_edge_pts_idx);
+    lidar_board_pts = pts_onboard(:, inlierIdx);
 
     % project planar points and edge points onto plane to reduce noise
-    n = lidar_board_plane_coeff(1:3);
-    d = lidar_board_plane_coeff(4);
-    pts_on_plane = lidar_board_edge_pts(1:3, 1);
-    pts_on_plane(3) = -((d + n(1:2)' * pts_on_plane(1:2)) / n(3));
-
-    for ptid = 1 : size(lidar_board_pts, 2)
-      pt = lidar_board_pts(1:3, ptid);
-      v = pt - pts_on_plane;
-      pt_onboard = pts_on_plane + v - (v' * n * n);
-      lidar_board_pts(1:3, ptid) = pt_onboard;
-    end
-
-    for ptid = 1 : size(lidar_board_edge_pts, 2)
-      pt = lidar_board_edge_pts(1:3, ptid);
-      v = pt - pts_on_plane;
-      pt_onboard = pts_on_plane + v - (v' * n * n);
-      lidar_board_edge_pts(1:3, ptid) = pt_onboard;
+%     n = lidar_board_plane_coeff(1:3);
+%     d = lidar_board_plane_coeff(4);
+%     pts_on_plane = lidar_board_edge_pts(1:3, 1);
+%     pts_on_plane(3) = -((d + n(1:2)' * pts_on_plane(1:2)) / n(3));
+% 
+%     for ptid = 1 : size(lidar_board_pts, 2)
+%       pt = lidar_board_pts(1:3, ptid);
+%       v = pt - pts_on_plane;
+%       pt_onboard = pts_on_plane + v - (v' * n * n);
+%       lidar_board_pts(1:3, ptid) = pt_onboard;
+%     end
+% 
+%     for ptid = 1 : size(lidar_board_edge_pts, 2)
+%       pt = lidar_board_edge_pts(1:3, ptid);
+%       v = pt - pts_on_plane;
+%       pt_onboard = pts_on_plane + v - (v' * n * n);
+%       lidar_board_edge_pts(1:3, ptid) = pt_onboard;
+%     end
+    
+    debug_flag = 0;
+    if debug_flag
+      fig = figure; 
+      hold on;
+      plot3(lidar_board_pts_raw(1, :), lidar_board_pts_raw(2, :), lidar_board_pts_raw(3, :), 'r.');
+      plot3(lidar_board_pts(1, :), lidar_board_pts(2, :), lidar_board_pts(3, :), 'r*');
+      plot3(lidar_board_edge_pts(1, :), lidar_board_edge_pts(2, :), lidar_board_edge_pts(3, :), 'bo', 'MarkerSize', 10);
+      hold off;
+      axis equal;
+      close(fig);
     end
 
     %% save feature extraction results
@@ -162,6 +187,7 @@ function run_lcecalib_fe()
     all_lidar_board_pts_raw{end + 1} = lidar_board_pts_raw(1:3, :);
     all_lidar_board_pts{end + 1} = lidar_board_pts(1:3, :);
     all_lidar_board_edge_pts{end + 1} = lidar_board_edge_pts(1:3, :);
+    all_lidar_board_plane_coeff{end + 1} = lidar_board_plane_coeff;
     all_img_undist{end + 1} = img_undist;
     all_lidar_pc_array{end + 1} = lidar_pc_array;   
     all_lidar_pc_array_raw{end + 1} = lidar_pc_array_raw;

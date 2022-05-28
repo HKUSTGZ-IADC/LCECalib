@@ -16,15 +16,15 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   % Initialization
   T_ini_best = eye(4, 4);
   min_error = 1000000;
-  for frame_num = floor(length(all_cam_board_plane_coeff) * 0.3) ...
+  for frame_num = floor(length(all_cam_board_plane_coeff) * 0.9) ...
       :min(length(all_cam_board_plane_coeff), end_frame)  
-    for iter = 1:5  % multiple iterations to try different combinations
+    for iter = 1:3  % multiple iterations to try different combinations
       reidx = randperm(length(all_cam_board_plane_coeff));
       reference_pts = zeros(0, 3);
       reference_normals = zeros(0, 3);
       target_pts = zeros(0, 3);
       target_normals = zeros(0, 3);
-      weights = zeros(0, 1);
+      point_cnt = 0;
       for idx = 1:frame_num
         lbpts = all_lidar_board_pts{reidx(idx)};
         cbcoeff = all_cam_board_plane_coeff{reidx(idx)};
@@ -34,9 +34,11 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
           reference_normals = [reference_normals; cbcoeff(1:3)'];
           target_pts = [target_pts; lbpts(:, j)'];          
           target_normals = [target_normals; [0 0 0]];
-          weights = [weights; 1.0 / length(lbpts)];
+          point_cnt = point_cnt + 1;
         end
-      end     
+      end
+      weights = ones(point_cnt, 1) / point_cnt;
+      
       % QPEP-PTop using only planar constraints
       [R_cam_lidar, t_cam_lidar, ~, ~, ~] = qpep_pTop(...
         target_pts, target_normals, ...
@@ -50,7 +52,6 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
           all_lidar_board_pts{i});
       end
       mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
-%       sprintf('iteration: %d, mp_err: %f', iter, mp_err)
       if (mp_err < min_error)
         min_error = mp_err;
         T_ini_best = T_ini_qpep;
@@ -59,6 +60,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   end
   disp('T_ini_best')
   disp(num2str(T_ini_best, '%5f '))  
+  sprintf('min mp_err: %f', min_error)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %%
@@ -66,7 +68,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   % Refinement
   T_est_best = eye(4, 4);
   min_error = 1000000;
-  for frame_num = start_frame :min(length(all_cam_board_plane_coeff), end_frame)
+  for frame_num = start_frame : min(length(all_cam_board_plane_coeff), end_frame)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
     all_eulers = zeros(3, all_iterations);
@@ -74,91 +76,91 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
     for iter = 1:all_iterations  % multiple iterations to try different combinations
       reidx = randperm(length(all_cam_board_plane_coeff));
       T_ref_qpep = T_ini_best;
-      for iter_ref = 1:edge_iterations
-        reference_pts = zeros(0, 3);
-        reference_normals = zeros(0, 3);
-        target_pts = zeros(0, 3);
-        target_normals = zeros(0, 3);        
-        weights = zeros(0, 1);
-        stds = zeros(0, 1);
-        for idx = 1:frame_num
-          lbpts = all_lidar_board_pts{reidx(idx)};
-          lepts = all_lidar_board_edge_pts{reidx(idx)};
-          cbcorner = all_cam_board_corners{reidx(idx)};
-          cbcoeff = all_cam_board_plane_coeff{reidx(idx)};
-          cbcenter_on_plane = all_cam_board_centers_on_plane{reidx(idx)};     
-          cbcoeff_cov = all_cam_board_plane_coeff_cov{reidx(idx)};
+      reference_pts = zeros(0, 3);
+      reference_normals = zeros(0, 3);
+      target_pts = zeros(0, 3);
+      target_normals = zeros(0, 3);        
+      stds = zeros(0, 1);
+      weights = zeros(1, 0);
+      point_cnt = 0;
+      for idx = 1:frame_num
+        lbpts = all_lidar_board_pts{reidx(idx)};
+        lepts = all_lidar_board_edge_pts{reidx(idx)};
+        cbcorner = all_cam_board_corners{reidx(idx)};
+        cbcoeff = all_cam_board_plane_coeff{reidx(idx)};
+        cbcenter_on_plane = all_cam_board_centers_on_plane{reidx(idx)};     
+        cbcoeff_cov = all_cam_board_plane_coeff_cov{reidx(idx)};
 
-          % set weights of edge and planar residuals
-          r1 = edge_weight / size(lepts, 2);  % weights for edge residuals            
-          r2 = planar_weight / length(lbpts);   % weights for planar residuals
-          
-          %%%%% add edge residuals
-          [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
-          lepts_cam = T_ref_qpep(1:3, 1:3) * lepts + T_ref_qpep(1:3, 4);  % 3xN
-          corre_idx = knnsearch(cbedge(1:3, :)', lepts_cam', 'K', 1);
-          corre_cbedge = cbedge(:, corre_idx); % 4xN
-          if use_edge_flag
-            for j = 1:size(lepts_cam, 2)
-              p = lepts_cam(:, j);
-              p1 = cbedge_dir(4:6, corre_cbedge(4, j));
-              p2 = p1 + cbedge_dir(1:3, corre_cbedge(4, j));
-              p1p2 = p1 - p2;
-              p1p = p1 - p;
-              p2p = p2 - p;
-              n1 = cross(p1p, p2p);
-              n1 = n1 / norm(n1);
-              n2 = cross(n1, p1p2);
-              n2 = n2 / norm(n2);
-              reference_pts = [reference_pts; cbedge(1:3, corre_idx(j))'];
-              reference_normals = [reference_normals; n2'];
-              target_pts = [target_pts; lepts(:, j)'];
-              target_normals = [target_normals; [0 0 0]];
-              weights = [weights; r1];
-              stds = [stds; 0.0];
-            end   
-            debug_flag = 0;
-            if debug_flag
-              fig = figure; hold on;
-              plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g*'); 
-              corr_pts = cbedge(1:3, corre_idx)';
-              plot3(corr_pts(:, 1), corr_pts(:, 2), corr_pts(:, 3), 'ro', 'MarkerSize', 12);
-              plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'bo', 'MarkerSize', 12);
-              legend('cam edge pts', 'cam corre edge pts', 'lidar edge pts');
-              hold off;
-              axis equal;
-              view(40, 10);
-              close(fig);
-            end
+        %%%%% add edge residuals
+        [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
+        lepts_cam = T_ref_qpep(1:3, 1:3) * lepts + T_ref_qpep(1:3, 4);  % 3xN
+        corre_idx = knnsearch(cbedge(1:3, :)', lepts_cam', 'K', 1);
+        corre_cbedge = cbedge(:, corre_idx); % 4xN
+        if use_edge_flag
+          for j = 1:size(lepts_cam, 2)
+            p = lepts_cam(:, j);
+            p1 = cbedge_dir(4:6, corre_cbedge(4, j));
+            p2 = p1 + cbedge_dir(1:3, corre_cbedge(4, j));
+            p1p2 = p1 - p2;
+            p1p = p1 - p;
+            p2p = p2 - p;
+            n1 = cross(p1p, p2p);
+            n1 = n1 / norm(n1);
+            n2 = cross(n1, p1p2);
+            n2 = n2 / norm(n2);
+            reference_pts = [reference_pts; cbedge(1:3, corre_idx(j))'];
+            reference_normals = [reference_normals; n2'];
+            target_pts = [target_pts; lepts(:, j)'];
+            target_normals = [target_normals; [0 0 0]];
+            stds = [stds; 0.0];
+            point_cnt = point_cnt + 1;
+            weights = [weights, edge_weight];
+          end   
+          debug_flag = 0;
+          if debug_flag
+            fig = figure; hold on;
+            plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g*'); 
+            corr_pts = cbedge(1:3, corre_idx)';
+            plot3(corr_pts(:, 1), corr_pts(:, 2), corr_pts(:, 3), 'ro', 'MarkerSize', 12);
+            plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'bo', 'MarkerSize', 12);
+            legend('cam edge pts', 'cam corre edge pts', 'lidar edge pts');
+            hold off;
+            axis equal;
+            view(40, 10);
+            close(fig);
           end
-          %%%%% add planar residuals
-          if use_planar_flag
-            for j = 1:length(lbpts)
-              reference_pts = [reference_pts; cbcenter_on_plane'];
-              reference_normals = [reference_normals; cbcoeff(1:3)'];
-              target_pts = [target_pts; lbpts(:, j)'];          
-              target_normals = [target_normals; [0 0 0]];
-              weights = [weights; r2];              
-              % compute the covariance of the point-to-plane residual
-              p12 = T_ref_qpep(1:3, 1:3) * lbpts(:, j) + T_ref_qpep(1:3, 4) - cbcenter_on_plane;
-              std = (p12' * cbcoeff_cov * p12)^(0.5);
-              stds = [stds; std];
-            end      
-          end        
         end
-        % remove outlier data
-        stds_sort = sort(stds, 'ascend');
-        std_threshold = stds_sort(floor(length(stds_sort) * 0.9));
-        weights(stds >= std_threshold) = 0;
         
-        % QPEP-PTop using both edge and planar constraints
-        [R_cam_lidar, t_cam_lidar, ~, ~, ~] = qpep_pTop(...
-          target_pts, target_normals, ...
-          reference_pts, reference_normals, ...
-          false, false, weights);
-        T_ref_qpep = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
+        %%%%% add planar residuals
+        if use_planar_flag
+          for j = 1:length(lbpts)
+            reference_pts = [reference_pts; cbcenter_on_plane'];
+            reference_normals = [reference_normals; cbcoeff(1:3)'];
+            target_pts = [target_pts; lbpts(:, j)'];          
+            target_normals = [target_normals; [0 0 0]];
+            % compute the covariance of the point-to-plane residual
+            p12 = T_ref_qpep(1:3, 1:3) * lbpts(:, j) + T_ref_qpep(1:3, 4) - cbcenter_on_plane;
+            std = (p12' * cbcoeff_cov * p12)^(0.5);
+            stds = [stds; std];
+            point_cnt = point_cnt + 1;
+            weights = [weights, planar_weight];
+          end      
+        end               
       end
+      weights = weights / point_cnt;
       
+      % remove outlier data
+%       stds_sort = sort(stds, 'ascend');
+%       std_threshold = stds_sort(floor(length(stds_sort) * 0.9));
+%       weights(stds >= std_threshold) = 0;
+
+      % QPEP-PTop using both edge and planar constraints
+      [R_cam_lidar, t_cam_lidar, ~, ~, ~] = qpep_pTop(...
+        target_pts, target_normals, ...
+        reference_pts, reference_normals, ...
+        false, false, weights);
+      T_ref_qpep = [R_cam_lidar, t_cam_lidar; 0 0 0 1];      
+
       % After multiple iterations of refinement
       T_est = T_ref_qpep;
 %       disp('T_est')
@@ -205,7 +207,19 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
       end           
       debug_flag = 0;
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+      % compute tf error and mean planar error
+      [r_err, t_err] = evaluateTFError(TGt, T_est);
+      p_err = zeros(2, length(all_cam_board_centers_on_plane));
+      for i = 1:length(all_cam_board_centers_on_plane)
+        [p_err(1, i), p_err(2, i)] = evaluateTotalPlanarError(T_est, ...
+          all_cam_board_plane_coeff{i}, ...
+          all_lidar_board_pts{i});
+      end
+      mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
+      sprintf('r_err: %f, t_err: %f, mp_err: %f', r_err, t_err, mp_err)      
     end
+    
     all_eulerz(:, frame_num) = all_eulers(1, :) / pi * 180;
     all_eulery(:, frame_num) = all_eulers(2, :) / pi * 180;
     all_eulerx(:, frame_num) = all_eulers(3, :) / pi * 180;
@@ -230,11 +244,14 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
         all_cam_board_plane_coeff{i}, ...
         all_lidar_board_pts{i});
     end
+    p_err_sort = sort(p_err(1, :), 'ascend');
+    p_err(:, p_err_sort >= p_err_sort(end) * 0.7) = 0;
     mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
     if (mp_err < min_error)
       min_error = mp_err;
       T_est_best = T_est;
     end
+    sprintf('r_err: %f, t_err: %f, mp_err: %f', r_err, t_err, mp_err)
     all_mp_err(1, frame_num) = mp_err;
     sprintf('Number of frames used for calibration: %d', frame_num)    
   end
@@ -248,7 +265,6 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   [r_err, t_err] = evaluateTFError(TGt, T_est_best);
   sprintf('r_err: %f', r_err)
   sprintf('t_err: %f', t_err)    
-
   tmp_p_err = zeros(2, length(all_cam_board_centers_on_plane));
   for i = 1:length(all_cam_board_centers_on_plane)
     [tmp_p_err(1, i), tmp_p_err(2, i)] = evaluateTotalPlanarError(T_est_best, ...

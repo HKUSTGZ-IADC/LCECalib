@@ -10,6 +10,9 @@ discontinuity_thres = 0.05; % default 0.05
 eigen_thres = 0.90; % default 0.95
 line_maxlen= 1;
 min_err_thres = 0.06; %default 0.045 每个点到平面的平均距离，距离小于这个表示有效平面
+if strcmp(data_type, 'simu_data_bias')
+  min_err_thres = 0.10;
+end
 template_rate = 10;
 dbscan_elpson = 0.2;
 sampleSize = 5;
@@ -53,6 +56,8 @@ end
 % ======= preprocess point cloud
 if strcmp(data_type, 'simu_data')
   pts_potional = pts_in(1:4, :);
+else if strcmp(data_type, 'simu_data_bias')
+  pts_potional = pts_in(1:4, :);  
 else
   pts_potional = [];
   for angle = minRange:intRange:maxRange
