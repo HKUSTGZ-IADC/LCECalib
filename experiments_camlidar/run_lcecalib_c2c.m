@@ -5,9 +5,9 @@ add_path_qpep;
 
 format short
 
-% data_type = 'simu_data_bias';
+data_type = 'simu_data_bias';
 % data_type = 'simu_data';
-data_type = 'real_data';
+% data_type = 'real_data';
 % data_type = 'fp_data';
 
 visualization_flag = 0;
@@ -15,7 +15,7 @@ save_result_flag = 1;
 debug_flag = 0;
 
 %% load data and extract features
-for data_option = 1:9
+for data_option = 3:10
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   params = load(fullfile(data_path, 'img/params.mat'));

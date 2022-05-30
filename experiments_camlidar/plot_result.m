@@ -11,7 +11,7 @@ data_type = 'simu_data_bias';
 % data_type = 'fp_data';
 
 %% load data and extract features
-for data_option = 1:10
+for data_option = 1:2
 %   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
