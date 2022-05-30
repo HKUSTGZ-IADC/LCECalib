@@ -5,23 +5,27 @@ add_path_qpep;
 
 format short
 
-data_type = 'real_data';
+data_type = 'simu_data_bias';
+% data_type = 'simu_data';
+% data_type = 'real_data';
+% data_type = 'fp_data';
+
 visualization_flag = 0;
+save_result_flag = 1;
 debug_flag = 0;
 
 %% load data and extract features
-for data_option = 1:6
+for data_option = 10:10
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   
-  params = load(fullfile(data_path, 'params.mat'));
+  params = load(fullfile(data_path, 'img/params.mat'));
   borW = params.borW; borH = params.borH; 
   numW = params.numW; numH = params.numH;
   pattern_size = params.pattern_size;
   K = params.K; D = params.D;
   TGt = params.TGt;
   num_data = params.num_data;
-  all_iterations = 1;
 
   %% Extract features
   img_list = dir(fullfile(data_path, 'img')); 
@@ -31,14 +35,18 @@ for data_option = 1:6
 
   all_cam_board_corners = {};
   all_cam_board_plane_coeff = {};
-  all_cam_board_centers = {};
+  all_cam_board_centers_on_plane = {};
   all_lidar_board_pts = {};
   all_lidar_board_corners = {};
   all_lidar_board_plane_coeff = {};
   all_img_undist = {};
   all_lidar_pc_array = {};
-  for idx = 1:min(25, num_data)
+  for idx = 1:min(length(pcd_list), min(num_data, 60))
       img_file = strcat(img_list(idx).folder, '/', img_list(idx).name);
+      if ~(contains(img_list(idx).name, '.png') ...
+        || contains(img_list(idx).name, '.jpg'))
+        continue;
+      end      
       pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
       img_raw = imread(img_file);
       pc_raw = pcread(pcd_file);
@@ -93,10 +101,11 @@ for data_option = 1:6
      
       %% lidar: feature extraction      
       [lidar_board_pts, lidar_board_plane_coeff, err] = ...
-        boardpts_ext(lidar_pc_array, borW, borH);
+        boardpts_ext(lidar_pc_array, borW, borH, data_type);
       if (isempty(lidar_board_pts))
         continue;
       end      
+      debug_flag = 0;
       lidar_board_corners = borcorner_ext(lidar_board_pts, borW, borH, debug_flag);
       if (debug_flag)
         figure; hold on;
@@ -109,7 +118,7 @@ for data_option = 1:6
       %% save feature extraction results      
       all_cam_board_corners{end + 1} = cam_board_corners;
       all_cam_board_plane_coeff{end + 1} = cam_board_plane_coeff;     
-      all_cam_board_centers{end + 1} = mean(cam_board_corners, 2)';
+      all_cam_board_centers_on_plane{end + 1} = mean(cam_board_corners, 2)';
       
       all_lidar_board_pts{end + 1} = lidar_board_pts(1:3, :);
       all_lidar_board_corners{end + 1} = lidar_board_corners;
@@ -120,68 +129,77 @@ for data_option = 1:6
   end
 
   %% Corner-Corner Extrinsic Calibration
-  aver_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff) - 1);
-  aver_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff) - 1);
-  TOptm_best = eye(4, 4);
-  min_t = 1000;
-%   for PoseNum = 1:length(all_cam_board_plane_coeff) - 1
-  for PoseNum = length(all_cam_board_plane_coeff) - 1
+  all_iterations = 5;
+  all_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff) - 1);
+  all_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff) - 1);
+  all_mp_err = zeros(all_iterations, length(all_cam_board_plane_coeff) - 1);
+  T_est_best = eye(4, 4);
+  min_error = 1000;
+  start_frame = 5;
+  end_frame = length(all_cam_board_plane_coeff);
+  for PoseNum = start_frame : end_frame
       r_errs = zeros(1, all_iterations); 
       t_errs = zeros(1, all_iterations);
+      mp_errs = zeros(1, all_iterations);
       for iter = 1:all_iterations    
         reidx = randperm(size(all_cam_board_corners, 2));
         sub_cam_corners = {};
         sub_cam_board_coeff = {};
         sub_lidar_corners = {};
         sub_lidar_board_coeff = {};
-        TOptm = extCalibCornerToCorner(all_cam_board_corners, ...
+        T_est = extCalibCornerToCorner(all_cam_board_corners, ...
           all_cam_board_plane_coeff, ...
           all_lidar_board_corners, ...
           all_lidar_board_plane_coeff, ...
           reidx(1:PoseNum));
         
-        [r_err, t_err] = evaluateTFError(TGt, TOptm);
+        [r_err, t_err] = evaluateTFError(TGt, T_est);
         r_errs(iter) = r_err;
         t_errs(iter) = t_err;
-        if (t_err < min_t)
-          min_t = t_err;
-          TOptm_best = TOptm;
-        end
         
-        if debug_flag
-          [img_undist, camParams] = undistort_image(img_raw, K, D);        
-          imshow(pt_project_depth2image(TOptm, K, all_lidar_pc_array{reidx(idx)}, img_undist));
-        end       
+        p_err = zeros(2, length(all_cam_board_centers_on_plane));
+        for i = 1:length(all_cam_board_plane_coeff)
+          [p_err(1, i), p_err(2, i)] = evaluateTotalPlanarError(T_est, ...
+            all_cam_board_plane_coeff{i}, ...
+            all_lidar_board_pts{i});
+        end
+        mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
+        if (mp_err < min_error)
+          min_error = mp_err;
+          T_est_best = T_est;
+        end
+        mp_errs(iter) = mp_err;
       end
-      aver_t_err(:, PoseNum) = t_errs';
-      aver_r_err(:, PoseNum) = r_errs';
-      sprintf('PoseNum: %d', PoseNum)
+      all_t_err(:, PoseNum) = t_errs';
+      all_r_err(:, PoseNum) = r_errs';
+      all_mp_err(:, PoseNum) = mp_errs';
+%       sprintf('PoseNum: %d', PoseNum)
   end
-  TOptm = TOptm_best;
-%   save(fullfile(data_path, 'result_proposed.mat'), ...
-%     'aver_r_err', 'aver_t_err', 'TOptm', ...
-%     'board_pts', 'pcd_corner3D', 'pc_bors_ceoff', 'img_corner3D', 'cam_bors_coeff');
+  
+  %%
+  if save_result_flag
+    save(fullfile(data_path, 'result_lcecalib_corner_corner.mat'), ...
+      'all_t_err', 'all_r_err', 'all_mp_err', ...
+      'TGt', 'T_est_best', ...
+      'all_cam_board_corners', ...
+      'all_cam_board_centers_on_plane', ...
+      'all_cam_board_plane_coeff', ...
+      'all_lidar_board_pts', ...
+      'all_lidar_board_corners', ...
+      'all_lidar_board_plane_coeff');
 
-  %% Plot results
-%   figure; boxplot(aver_r_err(:, 3: end));
-%   xlabel("Number of Poses"); title("Rotation Error [deg]");
-%   grid on;
-%   ax = gca;
-%   ax.GridLineStyle = '--';
-%   ax.GridAlpha = 0.3;
-%   set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
-%   title('Mean and Median Rotation Error', 'FontSize', 30, 'FontWeight', 'normal');
-%   box on;
-% 
-%   figure; boxplot(aver_t_err(:, 3: end));
-%   xlabel("Number of Poses"); ylabel("Translation Error [m]");
-%   grid on;
-%   ax = gca;
-%   ax.GridLineStyle = '--';
-%   ax.GridAlpha = 0.3;
-%   set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 1.5);
-%   title('Mean and Median Translation Error', 'FontSize', 30, 'FontWeight', 'normal');
-%   box on;
+%     save(fullfile(data_path, 'result_lcecalib_corner_corner_sensor_data.mat'), ...
+%       'all_t_err', 'all_r_err', 'all_mp_err', ...
+%       'T_est_best', ...
+%       'all_cam_board_corners', ...
+%       'all_cam_board_centers_on_plane', ...      
+%       'all_cam_board_plane_coeff', ...
+%       'all_lidar_board_pts', ...
+%       'all_lidar_board_corners', ...
+%       'all_lidar_board_plane_coeff', ...
+%       'all_img_undist', ...
+%       'all_lidar_pc_array');
+  end   
 end
 
 

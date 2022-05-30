@@ -22,7 +22,7 @@ numH = 7;
 numW = 9;
 use_edge_flag = 1; 
 use_planar_flag = 1;
-edge_weight = 5.0;
+edge_weight = 10.0;
 planar_weight = 1.0;
 save('data/simu_data_bias/simu_data_bias_1/img/params.mat', 'K', 'D', 'borH', 'borW', ...
   'numH', 'numW', 'pattern_size', 'squareSize', 'checkerboardPadding', 'TGt', ...

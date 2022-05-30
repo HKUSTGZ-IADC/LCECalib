@@ -51,32 +51,23 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
         false, false, weights);
       T_ini_qpep = [R_cam_lidar, t_cam_lidar; 0 0 0 1];
       
-      p_err = zeros(4, length(all_cam_board_centers_on_plane));
+      p_err = zeros(2, length(all_cam_board_centers_on_plane));
       for i = 1:length(all_cam_board_centers_on_plane)
         [p_err(1, i), p_err(2, i)] = evaluateTotalPlanarError(T_ini_qpep, ...
-          all_cam_board_plane_coeff{i}, all_lidar_board_pts{i});
+          all_cam_board_plane_coeff{i}, ...
+          all_lidar_board_pts{i});
       end
       mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
       if (mp_err < min_error)
         min_error = mp_err;
         T_ini_best = T_ini_qpep;
-      end
+      end    
     end
   end
   disp('T_ini_best')
   disp(num2str(T_ini_best, '%5f '))  
   [r_err, t_err] = evaluateTFError(T_ini_best, TGt);
-  p_err = zeros(4, length(all_cam_board_centers_on_plane));
-  for i = 1:length(all_cam_board_centers_on_plane)
-    [p_err(1, i), p_err(2, i)] = evaluateTotalPlanarError(T_ini_best, ...
-      all_cam_board_plane_coeff{i}, all_lidar_board_pts{i});
-    [p_err(3, i), p_err(4, i)] = evaluateTotalEdgeError(T_ini_best, ...
-      all_cam_board_corners{i}, all_lidar_board_edge_pts{i});        
-  end
-  mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
-  me_err = sum(p_err(3, :)) / sum(p_err(4, :));  % mean edge error      
-  sprintf('r_err: %f, t_err: %f, mp_err: %f, me_err: %f, total_err: %f of initial estimated TF', ...
-    r_err, t_err, mp_err, me_err, mp_err + me_err)  
+  sprintf('r_err: %f, t_err: %f, mp_err: %f of initial estimated TF', r_err, t_err, min_error)  
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %%
@@ -126,17 +117,10 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
               n1 = n1 / norm(n1);
               n2 = cross(n1, p1p2);
               n2 = n2 / norm(n2);
-              
-%               reference_pts = [reference_pts; corre_cbedge(1:3, j)'];
-%               reference_normals = [reference_normals; n1'];
-%               target_pts = [target_pts; lepts(:, j)'];
-%               target_normals = [target_normals; [0 0 0]];
-              
-              reference_pts = [reference_pts; corre_cbedge(1:3, j)'];
+              reference_pts = [reference_pts; cbedge(1:3, corre_idx(j))'];
               reference_normals = [reference_normals; n2'];
               target_pts = [target_pts; lepts(:, j)'];
               target_normals = [target_normals; [0 0 0]];
-              
               stds = [stds; 0.0];
               point_cnt = point_cnt + 1;
               if (strcmp(data_type, 'simu_data_bias'))
@@ -261,16 +245,14 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
       [p_err(1, i), p_err(2, i)] = evaluateTotalPlanarError(T_est, ...
         all_cam_board_plane_coeff{i}, all_lidar_board_pts{i});
       [p_err(3, i), p_err(4, i)] = evaluateTotalEdgeError(T_est, ...
-        all_cam_board_corners{i}, all_lidar_board_edge_pts{i});
+        all_cam_cor{i}, all_lidar_board_pts{i});
     end
     mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
-    me_err = sum(p_err(3, :)) / sum(p_err(4, :));  % mean planar error
-    if (mp_err + me_err < min_error)
-      min_error = mp_err + me_err;
+    if (mp_err < min_error)
+      min_error = mp_err;
       T_est_best = T_est;
     end
-    sprintf('r_err: %f, t_err: %f, mp_err: %f, me_err: %f, total_err: %f', ...
-      r_err, t_err, mp_err, me_err, mp_err + me_err)  
+    sprintf('r_err: %f, t_err: %f, mp_err: %f', r_err, t_err, mp_err)
     sprintf('Number of frames used for calibration: %d', frame_num)    
     all_r_err(1, frame_num) = r_err;
     all_t_err(1, frame_num) = t_err;
@@ -284,17 +266,13 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
 
   % output calibration errors
   [r_err, t_err] = evaluateTFError(TGt, T_est_best);
-  tmp_p_err = zeros(4, length(all_cam_board_centers_on_plane));
+  tmp_p_err = zeros(2, length(all_cam_board_centers_on_plane));
   for i = 1:length(all_cam_board_centers_on_plane)
     [tmp_p_err(1, i), tmp_p_err(2, i)] = evaluateTotalPlanarError(T_est_best, ...
       all_cam_board_plane_coeff{i}, all_lidar_board_pts{i});
-    [tmp_p_err(3, i), tmp_p_err(4, i)] = evaluateTotalEdgeError(T_est, ...
-      all_cam_board_corners{i}, all_lidar_board_edge_pts{i});    
   end
-  tmp_mp_err = sum(tmp_p_err(1, :)) / sum(tmp_p_err(2, :));  % mean edge error
-  tmp_me_err = sum(tmp_p_err(3, :)) / sum(tmp_p_err(4, :));  % mean planar error  
-  sprintf('r_err: %f, t_err: %f, mp_err: %f, me_err: %f, total_err: %f of final estimated TF', ...
-    r_err, t_err, tmp_mp_err, tmp_me_err, tmp_mp_err + tmp_me_err)  
+  tmp_mp_err = sum(tmp_p_err(1, :)) / sum(tmp_p_err(2, :));
+  sprintf('r_err: %f, t_err: %f, mp_err: %f of final estimated TF', r_err, t_err, tmp_mp_err)  
   save('tmp_lcecalib_opt.mat');
 end
 
