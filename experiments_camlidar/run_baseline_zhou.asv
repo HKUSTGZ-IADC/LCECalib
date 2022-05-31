@@ -2,16 +2,16 @@ clc, clear; close all;
 
 addpath('evaluation');
 
-all_data_type = {'simu_data_bias', 'real_data'};
+% all_data_type = {'simu_data_bias', 'real_data'};
 % all_data_type = {'real_data'};
-% all_data_type = {'simu_data_bias'};
+all_data_type = {'simu_data_bias'};
 
 removeground = true;
 rng('default');
 
 for i = 1:length(all_data_type)
 data_type = all_data_type{i};
-for data_option = 1:10
+for data_option = 10:10
   sprintf('data_option: %d', data_option)
   %% parameters
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));  
@@ -58,15 +58,11 @@ for data_option = 1:10
 %   helperShowCheckerboardPlanes(ptCloudFileNames, indices)  
 
   %% Extract planes from lidar point cloud
-  all_lidar_board_plane_coeff = cell(length(framesUsed));
-  for i = 1:length(framesUsed)
-    if (framesUsed(i) == 0)
-      all_lidar_board_plane_coeff{i} = [];
-    else
-      plane = lidarCheckerboardPlanes(sum(framesUsed(1:i)));
-    end
+  all_lidar_board_plane_coeff = {};
+  for i = 1:length(lidarCheckerboardPlanes)
+    plane = lidarCheckerboardPlanes(i);
     planeModel = pcfitplane(plane, 0.1);
-    all_lidar_board_plane_coeff{i} = planeModel.Parameters';
+    all_lidar_board_plane_coeff{end + 1} = planeModel';
   end
   % Fit plane
   %   plane = lidarCheckerboardPlanes(1);

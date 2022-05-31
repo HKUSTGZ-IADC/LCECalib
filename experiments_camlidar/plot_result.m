@@ -5,9 +5,9 @@ load('color_list.mat');
 
 format short
 
-data_type = 'simu_data_bias';
+% data_type = 'simu_data_bias';
 % data_type = 'simu_data';
-% data_type = 'real_data';
+data_type = 'real_data';
 % data_type = 'fp_data';
 
 method = {'Ours', 'C2C', 'Zhou'};
@@ -19,7 +19,7 @@ r_err_noise = zeros(length(result_mat), 10);
 t_err_noise = zeros(length(result_mat), 10);
 mp_err_noise = zeros(length(result_mat), 10);
 me_err_noise = zeros(length(result_mat), 10);
-for data_option = 1:10
+for data_option = 1:3
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   result_lcecalib_qpep = load(fullfile(data_path, 'result_lcecalib_qpep.mat'));  
   TGt = result_lcecalib_qpep.TGt;
@@ -49,35 +49,80 @@ subplot(311); hold on;
 plot(r_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
 plot(r_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
 plot(r_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
-ylabel("Rotation Error [deg]");
-legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
+legend(method, 'Location', 'northeastOutside', 'FontSize', 25);
 grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
-set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 2, 'YScale', 'log');
+set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log');
+ylabel("Rotation Error [deg]", 'FontSize', 20);
 
 subplot(312); hold on;
 plot(t_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
 plot(t_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
 plot(t_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
-ylabel("Translation Error [m]");  
-legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
+legend(method, 'Location', 'northeastOutside', 'FontSize', 25);
 grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
-set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 2, 'YScale', 'log');
+set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log');
+ylabel("Translation Error [m]", 'FontSize', 20);  
 
 subplot(313); hold on;
 plot(mp_err_noise(1, :)+me_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
 plot(mp_err_noise(2, :)+me_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
 plot(mp_err_noise(3, :)+me_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
-ylabel("MPE+MEE [m]");    
 xlabel("Noise Level");  
-legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
+legend(method, 'Location', 'northeastOutside', 'FontSize', 25);
 grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
-set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 2, 'YScale', 'log');
+set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log');
+ylabel("MPE+MEE [m]", 'FontSize', 20);
 
-sgtitle(sprintf('Calibration Error On %s', title), 'FontSize', 25, 'FontName', 'Times', 'FontWeight', 'normal');
+sgtitle(sprintf('Calibration Error On %s', title), 'FontSize', 30, 'FontName', 'Times', 'FontWeight', 'normal');
 
 % filename = fullfile('figure', 'tmech_version2', 'err_simu_data');
 % print(filename, '-depsc');
 % saveas(hf, strcat(filename, '.fig'));
+
+%% Evaluate feature extraction performance
+n_err_noise = zeros(length(result_mat), 10);
+result = load('data/simu_data_bias/simu_data_bias_1/result_lcecalib_qpep.mat');  
+gt_plane_coeff = result.all_lidar_board_plane_coeff;
+for i = 1:length(gt_plane_coeff)
+  tmp_plane_coeff = gt_plane_coeff{i};
+  if (tmp_plane_coeff(1) < 0)
+    tmp_plane_coeff(1:3) = tmp_plane_coeff(1:3) * (-1);
+    gt_plane_coeff{i} = tmp_plane_coeff;
+  end
+end
+
+for data_option = 1:10
+  if (~strcmp(data_type, 'simu_data_bias'))
+    continue;
+  end
+  data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option))); 
+  for j = 1:length(result_mat)
+    result_data = load(fullfile(data_path, result_mat{j}));  
+    est_plane_coeff = result_data.all_lidar_board_plane_coeff;
+    n_err = 0;
+    cnt = 0;
+
+    for i = 1:length(est_plane_coeff)
+      tmp_plane_coeff = est_plane_coeff{i};
+      if (isempty(tmp_plane_coeff))
+        continue;
+      end
+      if (tmp_plane_coeff(1) < 0)
+        tmp_plane_coeff(1:3) = tmp_plane_coeff(1:3) * (-1);
+        est_plane_coeff{i} = tmp_plane_coeff;
+      end
+      tmp_gt_plane_coeff = gt_plane_coeff{i};
+      tmp_est_plane_coeff = est_plane_coeff{i};
+      n_err = n_err + norm(tmp_gt_plane_coeff(1:3)-tmp_est_plane_coeff(1:3));
+      cnt = cnt + 1;
+    end
+    n_err = n_err / cnt;
+    sprintf('%d, %s, n_err: %f', ...
+      data_option, method{j}, ...
+      n_err)
+    n_err_noise(j, data_option) = n_err;
+  end 
+end
 
 %%
 % data_type = 'simu_data';

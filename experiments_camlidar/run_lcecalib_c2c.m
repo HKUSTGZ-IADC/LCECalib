@@ -15,7 +15,7 @@ debug_flag = 0;
 save_result_flag = 1;
 
 %% load data and extract features
-for data_option = 1:10
+for data_option = 1:3
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   if (~exist(data_path)) 
