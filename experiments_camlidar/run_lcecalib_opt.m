@@ -1,9 +1,14 @@
 function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_frame)
   load('tmp_lcecalib_fe.mat');
 
-  all_t_err = zeros(1, length(all_cam_board_plane_coeff));
-  all_r_err = zeros(1, length(all_cam_board_plane_coeff));
-  all_mp_err = zeros(1, length(all_cam_board_plane_coeff));
+  all_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_mp_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  all_me_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
+  select_t_err = zeros(1, length(all_cam_board_plane_coeff));
+  select_r_err = zeros(1, length(all_cam_board_plane_coeff));
+  select_mp_err = zeros(1, length(all_cam_board_plane_coeff));  
+  select_me_err = zeros(1, length(all_cam_board_plane_coeff));  
   all_eulerx = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_eulery = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_eulerz = zeros(all_iterations, length(all_cam_board_plane_coeff));
@@ -19,7 +24,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   if strcmp(data_type, 'simu_data_bias')
     r = 1.0;
   else
-    r = 0.9;
+    r = 0.6;
   end
   for frame_num = floor(length(all_cam_board_plane_coeff) * r) ...
       :min(length(all_cam_board_plane_coeff), end_frame)  
@@ -84,10 +89,12 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   % Refinement
   T_est_best = T_ini_best;
   min_error = 1e5;
-  edge_weight = 3.0;
   for frame_num = start_frame : min(length(all_cam_board_plane_coeff), end_frame)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
+    mp_errs = zeros(1, all_iterations);
+    me_errs = zeros(1, all_iterations);
+    
     all_eulers = zeros(3, all_iterations);
     all_tsl = zeros(3, all_iterations);
     for iter = 1:all_iterations  % multiple iterations to try different combinations
@@ -204,42 +211,59 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
       all_eulers(:, iter) = rotm2eul(T_est(1:3, 1:3), 'ZYX');
       all_tsl(:, iter) = T_est(1:3, 4);
 
-      debug_flag = 0;
-      if debug_flag
-        figure;
-        subplot(121);
-        imshow(projectPointOnImage(T_est, K, ...
-          all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
-        title('Projected points with Test', 'FontSize', 25);
-        subplot(122);
-        imshow(projectPointOnImage(TGt, K, ...
-          all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
-        title('Projected points with TGt', 'FontSize', 25);
-        figure;
-        cloud_rgb = colorizePointFromImage(T_est, K, ...
-          all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)});
-      end    
-      debug_flag = 0;
+      [r_errs(iter), t_errs(iter)] = evaluateTFError(TGt, T_est);
+      p_err = zeros(4, length(all_cam_board_centers_on_plane));
+      for i = 1:length(all_cam_board_centers_on_plane)
+        [p_err(1, i), p_err(2, i)] = evaluateTotalPlanarError(T_est, ...
+          all_cam_board_plane_coeff{i}, all_lidar_board_pts{i});
+        [p_err(3, i), p_err(4, i)] = evaluateTotalEdgeError(T_est, ...
+          all_cam_board_corners{i}, all_lidar_board_edge_pts{i});        
+      end
+      mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
+      me_err = sum(p_err(3, :)) / sum(p_err(4, :));  % mean edge error
+      mp_errs(iter) = mp_err;      
+      me_errs(iter) = me_err;      
       
-      % add point-to-plane registration visualization
-      debug_flag = 0;
-      if debug_flag
-        fig = figure; hold on;
-        lbpts_cam = T_est(1:3, 1:3) * lbpts + T_est(1:3, 4);  % 3xN
-        lepts_cam = T_est(1:3, 1:3) * lepts + T_est(1:3, 4);  % 3xN
-        plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g.'); 
-        plot3(corre_cbedge(1, :), corre_cbedge(2, :), corre_cbedge(3, :), 'bo', 'MarkerSize', 12);
-        plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r.', 'MarkerSize', 6);
-        plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'ro', 'MarkerSize', 12);
-        legend('cam edge pts', 'cam corre edge pts', 'lidar board pts', 'lidar edge pts');
-        hold off;
-        axis equal;
-        view(40, 10);
-        close(fig);
-      end           
-      debug_flag = 0;
+%       debug_flag = 0;
+%       if debug_flag
+%         figure;
+%         subplot(121);
+%         imshow(projectPointOnImage(T_est, K, ...
+%           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
+%         title('Projected points with Test', 'FontSize', 25);
+%         subplot(122);
+%         imshow(projectPointOnImage(TGt, K, ...
+%           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)}));
+%         title('Projected points with TGt', 'FontSize', 25);
+%         figure;
+%         cloud_rgb = colorizePointFromImage(T_est, K, ...
+%           all_lidar_pc_array{reidx(1)}, all_img_undist{reidx(1)});
+%       end    
+%       debug_flag = 0;
+%       
+%       % add point-to-plane registration visualization
+%       debug_flag = 0;
+%       if debug_flag
+%         fig = figure; hold on;
+%         lbpts_cam = T_est(1:3, 1:3) * lbpts + T_est(1:3, 4);  % 3xN
+%         lepts_cam = T_est(1:3, 1:3) * lepts + T_est(1:3, 4);  % 3xN
+%         plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g.'); 
+%         plot3(corre_cbedge(1, :), corre_cbedge(2, :), corre_cbedge(3, :), 'bo', 'MarkerSize', 12);
+%         plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r.', 'MarkerSize', 6);
+%         plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'ro', 'MarkerSize', 12);
+%         legend('cam edge pts', 'cam corre edge pts', 'lidar board pts', 'lidar edge pts');
+%         hold off;
+%         axis equal;
+%         view(40, 10);
+%         close(fig);
+%       end           
+%       debug_flag = 0;
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
     end
+    all_r_err(:, frame_num) = r_errs';
+    all_t_err(:, frame_num) = t_errs';
+    all_mp_err(:, frame_num) = mp_errs';    
+    all_me_err(:, frame_num) = me_errs';    
     
     all_eulerz(:, frame_num) = all_eulers(1, :) / pi * 180;
     all_eulery(:, frame_num) = all_eulers(2, :) / pi * 180;
@@ -264,17 +288,18 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
         all_cam_board_corners{i}, all_lidar_board_edge_pts{i});
     end
     mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
-    me_err = sum(p_err(3, :)) / sum(p_err(4, :));  % mean planar error
+    me_err = sum(p_err(3, :)) / sum(p_err(4, :));  % mean edge error
     if (mp_err + me_err < min_error)
       min_error = mp_err + me_err;
       T_est_best = T_est;
     end
     sprintf('r_err: %f, t_err: %f, mp_err: %f, me_err: %f, total_err: %f', ...
       r_err, t_err, mp_err, me_err, mp_err + me_err)  
-    sprintf('Number of frames used for calibration: %d', frame_num)    
-    all_r_err(1, frame_num) = r_err;
-    all_t_err(1, frame_num) = t_err;
-    all_mp_err(1, frame_num) = mp_err;
+    sprintf('Number of frames used for calibration: %d', frame_num) 
+    select_r_err(1, frame_num) = r_err;
+    select_t_err(1, frame_num) = t_err;
+    select_mp_err(1, frame_num) = mp_err;
+    select_me_err(1, frame_num) = me_err;
   end
   disp('T_est_best')
   disp(num2str(T_est_best, '%5f '))    

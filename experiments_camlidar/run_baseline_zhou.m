@@ -2,20 +2,22 @@ clc, clear; close all;
 
 addpath('evaluation');
 
-data_type = 'simu_data_bias';
-% data_type = 'simu_data';
-% data_type = 'real_data';
-% data_type = 'fp_data';
+% all_data_type = {'simu_data_bias', 'real_data'};
+all_data_type = {'real_data'};
 
 removeground = false;
 rng('default');
 
-for data_option = 1:1
+for i = 1:length(all_data_type)
+data_type = all_data_type{i};
+for data_option = 1:10
   sprintf('data_option: %d', data_option)
   %% parameters
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));  
-  
-  data_ours = load(fullfile(data_path, 'result_lcecalib_qpep.mat'));
+  if (~exist(data_path)) 
+    continue;
+  end
+  data_qpep = load(fullfile(data_path, 'result_lcecalib_qpep.mat'));
   
   intrinsic = load(fullfile('data', data_type, 'baseline_zhou_calibration.mat'));
   params = load(fullfile('data', data_type, 'baseline_zhou_params.mat'));
@@ -59,12 +61,16 @@ for data_option = 1:1
   
   all_t_err = [];
   all_r_err = [];
+  all_mp_err = [];
+  all_me_err = [];    
   T_est_best = eye(4, 4);
   min_error = 1e5;
-  all_iterations = 10;
-  for frame_num = 20:length(avail_ptCloudFileNames) - 1
+  all_iterations = 100;
+  for frame_num = 1:length(avail_ptCloudFileNames)
     t_errs = [];
     r_errs = [];
+    mp_errs = [];
+    me_errs = [];
     for iter = 1:all_iterations
       reidx = randperm(length(avail_ptCloudFileNames));
       tmp_ptCloudFileNames = avail_ptCloudFileNames(reidx(1:frame_num));
@@ -85,50 +91,37 @@ for data_option = 1:1
 
       % evaluation
       [r_errs(end + 1), t_errs(end + 1)] = evaluateTFError(TGt, Test);
-      p_err = zeros(2, length(data_ours.all_cam_board_centers_on_plane));
-      for i = 1:length(data_ours.all_cam_board_centers_on_plane)
+      p_err = zeros(4, length(data_qpep.all_cam_board_centers_on_plane));
+      for i = 1:length(data_qpep.all_cam_board_centers_on_plane)
         [p_err(1, i), p_err(2, i)] = evaluateTotalPlanarError(Test, ...
-          data_ours.all_cam_board_plane_coeff{i}, ...
-          data_ours.all_lidar_board_pts{i});
+          data_qpep.all_cam_board_plane_coeff{i}, data_qpep.all_lidar_board_pts{i});
+        [p_err(3, i), p_err(4, i)] = evaluateTotalEdgeError(T_est, ...
+          data_qpep.all_cam_board_corners{i}, data_qpep.all_lidar_board_edge_pts{i});       
       end
       mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
-      if (mp_err < min_error)
-        min_error = mp_err;
+      me_err = sum(p_err(3, :)) / sum(p_err(4, :));  % mean edge error
+      if (mp_err + me_err < min_error)
+        min_error = mp_err + me_err;
         T_est_best = Test;
-      end      
+      end  
+      mp_errs(end + 1) = mp_err;
+      me_errs(end + 1) = me_err;
     end
-    all_t_err = [all_t_err, t_errs'];
     all_r_err = [all_r_err, r_errs'];
+    all_t_err = [all_t_err, t_errs'];    
+    all_mp_err = [all_mp_err, mp_errs'];
+    all_me_err = [all_me_err, me_errs'];
     sprintf('frame_num: %d', frame_num)
   end
   save(fullfile(data_path, 'result_baseline_zhou.mat'), ...
-    'all_r_err', 'all_t_err', 'T_est_best');
+    'all_r_err', 'all_t_err', 'all_mp_err', 'all_me_err', ...
+    'T_est_best');
   save(fullfile(data_path, 'result_baseline_zhou_sensor_data.mat'), ...
-    'all_r_err', 'all_t_err', 'T_est_best', ...
+    'all_r_err', 'all_t_err', 'all_mp_err', 'all_me_err', ...
+    'T_est_best', ...
     'avail_lidarCheckerPlanes');  
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+end
 
 
 

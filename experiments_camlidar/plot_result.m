@@ -1,7 +1,7 @@
 clc; clear; close all;
 
 add_path_lcecalib;
-add_path_qpep;
+load('color_list.mat');
 
 format short
 
@@ -10,25 +10,76 @@ data_type = 'simu_data_bias';
 % data_type = 'real_data';
 % data_type = 'fp_data';
 
+method = {'Ours', 'C2C', 'Zhou'};
+result_mat = {'result_lcecalib_qpep.mat', 'result_lcecalib_corner_corner.mat', 'result_baseline_zhou.mat'};
+title = 'Simulated Data';
+
 %% load data and extract features
-for data_option = 1:2
-%   sprintf('data_option: %d', data_option)
+r_err_noise = zeros(length(result_mat), 10);
+t_err_noise = zeros(length(result_mat), 10);
+mp_err_noise = zeros(length(result_mat), 10);
+me_err_noise = zeros(length(result_mat), 10);
+for data_option = 1:10
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
-  
-  result_lcecalib_corner_corner = load(fullfile(data_path, ...
-    'result_lcecalib_corner_corner.mat'));
-  
-  result_lcecalib_qpep = load(fullfile(data_path, ...
-    'result_lcecalib_qpep.mat'));  
-  
+  result_lcecalib_qpep = load(fullfile(data_path, 'result_lcecalib_qpep.mat'));  
   TGt = result_lcecalib_qpep.TGt;
-  [r_err, t_err] = evaluateTFError(TGt, result_lcecalib_qpep.T_est_best);
-  sprintf('%d: LCECalib-QPEP: r_err: %f, t_err: %f', data_option, r_err, t_err)
-  [r_err, t_err] = evaluateTFError(TGt, result_lcecalib_corner_corner.T_est_best);
-  sprintf('%d: LCECalib-C2C: r_err: %f, t_err: %f', data_option, r_err, t_err)
+  
+  for j = 1:length(result_mat)
+    result_data = load(fullfile(data_path, result_mat{j}));  
+    [r_err_noise(j, data_option), t_err_noise(j, data_option), ...
+     mp_err_noise(j, data_option), me_err_noise(j, data_option)] = evaluateTFPlaneEdgeError(...
+      TGt, ...
+      result_data.T_est_best, ...
+      result_lcecalib_qpep.all_cam_board_centers_on_plane, ...
+      result_lcecalib_qpep.all_cam_board_plane_coeff, ...
+      result_lcecalib_qpep.all_lidar_board_pts, ...
+      result_lcecalib_qpep.all_cam_board_corners, ...
+      result_lcecalib_qpep.all_lidar_board_edge_pts);
+    sprintf('%d: %s: r_err: %f, t_err: %f, mp_err: %f, me_err: %f, total_err: %f', ...
+      data_option, method{j}, ...
+      r_err_noise(j, data_option), t_err_noise(j, data_option), ...
+      mp_err_noise(j, data_option), me_err_noise(j, data_option), ...
+      mp_err_noise(j, data_option)+me_err_noise(j, data_option))
+  end 
 end
 
+%% Plot results
+hf = figure; 
+subplot(311); hold on;
+plot(r_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
+plot(r_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
+plot(r_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
+ylabel("Rotation Error [deg]");
+legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
+grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
+set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 2, 'YScale', 'log');
 
+subplot(312); hold on;
+plot(t_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
+plot(t_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
+plot(t_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
+ylabel("Translation Error [m]");  
+legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
+grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
+set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 2, 'YScale', 'log');
+
+subplot(313); hold on;
+plot(mp_err_noise(1, :)+me_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
+plot(mp_err_noise(2, :)+me_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
+plot(mp_err_noise(3, :)+me_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
+ylabel("MPE+MEE [m]");    
+xlabel("Noise Level");  
+legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
+grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
+set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 2, 'YScale', 'log');
+
+sgtitle(sprintf('Calibration Error On %s', title), 'FontSize', 25, 'FontName', 'Times', 'FontWeight', 'normal');
+
+% filename = fullfile('figure', 'tmech_version2', 'err_simu_data');
+% print(filename, '-depsc');
+% saveas(hf, strcat(filename, '.fig'));
+
+%%
 % data_type = 'simu_data';
 % data_fold = {'noise-free', 'noise-0.015', 'noise-0.03'};
 % str_legend = {' (\sigma=0)', ' (\sigma=0.015)', ' (\sigma=0.03)'};
