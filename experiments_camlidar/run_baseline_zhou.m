@@ -58,7 +58,7 @@ for data_option = 1:10
 %   helperShowCheckerboardPlanes(ptCloudFileNames, indices)  
 
   %% Extract planes from lidar point cloud
-  all_lidar_board_plane_coeff = cell(length(framesUsed));
+  all_lidar_board_plane_coeff = cell(1, length(framesUsed));
   for i = 1:length(framesUsed)
     if (framesUsed(i) == 0)
       all_lidar_board_plane_coeff{i} = [];
