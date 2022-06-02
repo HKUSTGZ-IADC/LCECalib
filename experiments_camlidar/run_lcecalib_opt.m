@@ -23,12 +23,14 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   min_error = 1e5;
   if strcmp(data_type, 'simu_data_bias')
     r = 1.0;
+  elseif (strcmp(data_type, 'simu_data_bias') && (data_option > 3))
+    r = 0.8;
   else
     r = 0.6;
   end
   for frame_num = floor(length(all_cam_board_plane_coeff) * r) ...
       :min(length(all_cam_board_plane_coeff), end_frame)  
-    for iter = 1:5  % multiple iterations to try different combinations
+    for iter = 1:3  % multiple iterations to try different combinations
       reidx = randperm(length(all_cam_board_plane_coeff));
       reference_pts = zeros(0, 3);
       reference_normals = zeros(0, 3);
@@ -60,10 +62,13 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
       for i = 1:length(all_cam_board_centers_on_plane)
         [p_err(1, i), p_err(2, i)] = evaluateTotalPlanarError(T_ini_qpep, ...
           all_cam_board_plane_coeff{i}, all_lidar_board_pts{i});
+        [p_err(3, i), p_err(4, i)] = evaluateTotalEdgeError(T_ini_qpep, ...
+          all_cam_board_corners{i}, all_lidar_board_edge_pts{i});
       end
       mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
-      if (mp_err < min_error)
-        min_error = mp_err;
+      me_err = sum(p_err(3, :)) / sum(p_err(4, :));  % mean planar error
+      if (mp_err + me_err < min_error)
+        min_error = mp_err + me_err;
         T_ini_best = T_ini_qpep;
       end
     end
@@ -176,8 +181,8 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
               target_normals = [target_normals; [0 0 0]];
               % compute the covariance of the point-to-plane residual
               p12 = T_ref_qpep(1:3, 1:3) * lbpts(:, j) + T_ref_qpep(1:3, 4) - cbcenter_on_plane;
-              std = (p12' * cbcoeff_cov * p12)^(0.5);
-              stds = [stds; std];
+              stddd = (p12' * cbcoeff_cov * p12)^(0.5);
+              stds = [stds; stddd];
               point_cnt = point_cnt + 1;
               if (strcmp(data_type, 'simu_data_bias'))
                 weights = [weights, planar_weight];
@@ -265,6 +270,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
     all_mp_err(:, frame_num) = mp_errs';    
     all_me_err(:, frame_num) = me_errs';    
     
+    % mean
     all_eulerz(:, frame_num) = all_eulers(1, :) / pi * 180;
     all_eulery(:, frame_num) = all_eulers(2, :) / pi * 180;
     all_eulerx(:, frame_num) = all_eulers(3, :) / pi * 180;
@@ -277,8 +283,21 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
     T_est = eye(4, 4);
     T_est(1:3, 1:3) = quat2rotm(quatAverage);
     T_est(1:3, 4) = tslAverage;
-    
-    % compute tf error and mean planar error
+
+    % median
+%     all_eulerz(:, frame_num) = all_eulers(1, :) / pi * 180;
+%     all_eulery(:, frame_num) = all_eulers(2, :) / pi * 180;
+%     all_eulerx(:, frame_num) = all_eulers(3, :) / pi * 180;
+%     all_tx(:, frame_num) = all_tsl(1, :);
+%     all_ty(:, frame_num) = all_tsl(2, :);
+%     all_tz(:, frame_num) = all_tsl(3, :);
+%     quatMedian = eul2quat(median(all_eulers, 2)', 'ZYX');
+%     tslMedian = median(all_tsl, 2);
+%     T_est = eye(4, 4);
+%     T_est(1:3, 1:3) = quat2rotm(quatMedian);
+%     T_est(1:3, 4) = tslMedian;
+       
+    % output calibration errors (candidate TF)
     [r_err, t_err] = evaluateTFError(TGt, T_est);
     p_err = zeros(4, length(all_cam_board_centers_on_plane));
     for i = 1:length(all_cam_board_centers_on_plane)
@@ -290,7 +309,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
     mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
     me_err = sum(p_err(3, :)) / sum(p_err(4, :));  % mean edge error
     if (strcmp(data_type, 'real_data') && (data_option > 3))
-      if ((frame_num >= 10) && (mp_err + me_err < min_error))
+      if (mp_err + me_err < min_error)
         min_error = mp_err + me_err;
         T_est_best = T_est;
       end
@@ -312,13 +331,13 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   disp(num2str(TGt, '%5f '))    
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  % output calibration errors
+  % output calibration errors (the best TF)
   [r_err, t_err] = evaluateTFError(TGt, T_est_best);
   tmp_p_err = zeros(4, length(all_cam_board_centers_on_plane));
   for i = 1:length(all_cam_board_centers_on_plane)
     [tmp_p_err(1, i), tmp_p_err(2, i)] = evaluateTotalPlanarError(T_est_best, ...
       all_cam_board_plane_coeff{i}, all_lidar_board_pts{i});
-    [tmp_p_err(3, i), tmp_p_err(4, i)] = evaluateTotalEdgeError(T_est, ...
+    [tmp_p_err(3, i), tmp_p_err(4, i)] = evaluateTotalEdgeError(T_est_best, ...
       all_cam_board_corners{i}, all_lidar_board_edge_pts{i});    
   end
   tmp_mp_err = sum(tmp_p_err(1, :)) / sum(tmp_p_err(2, :));  % mean edge error

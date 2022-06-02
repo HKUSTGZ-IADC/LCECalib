@@ -16,7 +16,7 @@ save_result_flag = 1;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 1:10
+for data_option = 6:6
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   if (~exist(data_path)) 
@@ -36,12 +36,12 @@ for data_option = 1:10
   planar_weight = params.planar_weight;
 
   %% Extract features
-  img_list = dir(fullfile(data_path, 'img')); 
+  img_list = dir(fullfile(data_path, 'img_before_select')); 
   img_list = img_list(3:end);
-  pcd_list = dir(fullfile(data_path, 'pcd'));
+  pcd_list = dir(fullfile(data_path, 'pcd_before_select'));
   pcd_list = pcd_list(3:end);  
-  pcd_raw_list = dir(fullfile(data_path, 'raw_pcd'));
-  pcd_raw_list = pcd_raw_list(3:end);  
+  pcd_raw_list = dir(fullfile(data_path, 'raw_pcd_before_select'));
+  pcd_raw_list = pcd_raw_list(3:end);
   save('tmp_lcecalib_dataset.mat', ...
     'data_path', 'data_type', 'data_option', ...
     'img_list', 'pcd_list', 'pcd_raw_list', ...
@@ -62,13 +62,15 @@ for data_option = 1:10
   load('tmp_lcecalib_opt.mat');
   
   %%
-if save_result_flag
+  if save_result_flag
     save(fullfile(data_path, 'result_lcecalib_qpep.mat'), ...
-      'all_t_err', 'all_r_err', 'all_mp_err', ...
+      'data_type', 'data_option', ...
+      'all_t_err', 'all_r_err', 'all_mp_err', 'all_me_err', ...
       'select_t_err', 'select_r_err', 'select_mp_err', 'select_me_err', ...
       'all_eulerx', 'all_eulery', 'all_eulerz', ...
       'all_tx', 'all_ty', 'all_tz', ...
       'TGt', 'T_ini_best', 'T_est_best', ...
+      'start_frame', ...
       'all_cam_board_corners', ...
       'all_cam_board_centers_on_plane', ...
       'all_cam_board_plane_coeff', ...
@@ -79,11 +81,13 @@ if save_result_flag
       'all_lidar_board_plane_coeff');
 
     save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
+      'data_type', 'data_option', ...  
       'all_t_err', 'all_r_err', 'all_mp_err', 'all_me_err', ...
       'select_t_err', 'select_r_err', 'select_mp_err', 'select_me_err', ...
       'all_eulerx', 'all_eulery', 'all_eulerz', ...
       'all_tx', 'all_ty', 'all_tz', ...
       'TGt', 'T_ini_best', 'T_est_best', ...
+      'start_frame', ...
       'all_cam_board_corners', ...
       'all_cam_board_centers_on_plane', ...
       'all_cam_board_plane_coeff', ...
@@ -98,7 +102,9 @@ if save_result_flag
   end
   
   %% Plot results
-  plot_result_flag = 0;
+  plot_result_flag = 1; 
+  reidx = randperm(length(all_cam_board_plane_coeff));
+  idx = reidx(1);
   if plot_result_flag
     figure; 
     subplot(311); plot(all_r_err(start_frame:end), 'r-o', ...
@@ -130,46 +136,46 @@ if save_result_flag
       'FontName', 'Times', 'FontWeight', 'normal');
   end
   
-  idx = 5;
   if plot_result_flag
     figure;
     subplot(121);
     imshow(projectPointOnImage(T_est_best, K, ...
-      all_lidar_pc_array_raw{reidx(idx)}, all_img_undist{reidx(idx)}));
+      all_lidar_pc_array_raw{idx}, all_img_undist{idx}));
     title('Projected points with Test', 'FontSize', 25);
     subplot(122);
     imshow(projectPointOnImage(TGt, K, ...
-      all_lidar_pc_array_raw{reidx(idx)}, all_img_undist{reidx(idx)}));
+      all_lidar_pc_array_raw{idx}, all_img_undist{idx}));
     title('Projected points with TGt', 'FontSize', 25);
-    cloud_rgb = colorizePointFromImage(T_est_best, K, ...
-      all_lidar_pc_array_raw{reidx(idx)}, all_img_undist{reidx(idx)});    
-    pcwrite(cloud_rgb, '/tmp/cloud_rgb.pcd');
+%     cloud_rgb = colorizePointFromImage(T_est_best, K, ...
+%       all_lidar_pc_array_raw{reidx(1)}, all_img_undist{reidx(1)});    
+%     pcwrite(cloud_rgb, '/tmp/cloud_rgb.pcd');
   end
   
-  if plot_result_flag
-    figure; hold on;
-    lbpts = all_lidar_board_pts{reidx(3)};
-    lepts = all_lidar_board_edge_pts{reidx(3)};
-    cbcorner = all_cam_board_corners{reidx(3)};
-    [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
-    lbpts_cam = T_est_best(1:3, 1:3) * lbpts + T_est_best(1:3, 4);  % 3xN
-    lepts_cam = T_est_best(1:3, 1:3) * lepts + T_est_best(1:3, 4);  % 3xN
-    plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g.'); 
-    plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r.', 'MarkerSize', 6);
-    plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'ro', 'MarkerSize', 12);
-    legend('cam edge pts', 'lidar board pts', 'lidar edge pts');
-    hold off; axis equal; view(40, 10);
-  end
+%   if plot_result_flag
+%     figure; hold on;
+%     lbpts = all_lidar_board_pts{reidx(1)};
+%     lepts = all_lidar_board_edge_pts{reidx(1)};
+%     cbcorner = all_cam_board_corners{reidx(1)};
+%     [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
+%     lbpts_cam = T_est_best(1:3, 1:3) * lbpts + T_est_best(1:3, 4);  % 3xN
+%     lepts_cam = T_est_best(1:3, 1:3) * lepts + T_est_best(1:3, 4);  % 3xN
+%     plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g.'); 
+%     plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r.', 'MarkerSize', 6);
+%     plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'ro', 'MarkerSize', 12);
+%     legend('cam edge pts', 'lidar board pts', 'lidar edge pts');
+%     hold off; axis equal; view(40, 10);
+%   end
   plot_result_flag = 0;
   
   %% tmp
-  plot_result_flag = 0;
+  plot_result_flag = 1;
+  reidx = randperm(length(all_cam_board_plane_coeff));
   if plot_result_flag
     figure; hold on;
-    for idx = 1:3
-      lbpts = all_lidar_board_pts{reidx(idx)};
-      lepts = all_lidar_board_edge_pts{reidx(idx)};
-      cbcorner = all_cam_board_corners{reidx(idx)};
+    for idx = 1:7
+      lbpts = all_lidar_board_pts{idx};
+      lepts = all_lidar_board_edge_pts{idx};
+      cbcorner = all_cam_board_corners{idx};
       [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
       lbpts_cam = T_est_best(1:3, 1:3) * lbpts + T_est_best(1:3, 4);  % 3xN
       lepts_cam = T_est_best(1:3, 1:3) * lepts + T_est_best(1:3, 4);  % 3xN

@@ -2,8 +2,8 @@ clc, clear; close all;
 
 addpath('evaluation');
 
-all_data_type = {'simu_data_bias', 'real_data'};
-% all_data_type = {'real_data'};
+% all_data_type = {'simu_data_bias', 'real_data'};
+all_data_type = {'real_data'};
 % all_data_type = {'simu_data_bias'};
 
 removeground = true;
@@ -11,7 +11,7 @@ rng('default');
 
 for i = 1:length(all_data_type)
 data_type = all_data_type{i};
-for data_option = 1:10
+for data_option = 1:9
   sprintf('data_option: %d', data_option)
   %% parameters
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));  
@@ -19,15 +19,31 @@ for data_option = 1:10
     continue;
   end
   data_qpep = load(fullfile(data_path, 'result_lcecalib_qpep.mat'));
-  
-  intrinsic = load(fullfile('data', data_type, 'baseline_zhou_calibration.mat'));
-  params = load(fullfile('data', data_type, 'baseline_zhou_params.mat'));
+  params = load(fullfile(data_path, 'img', 'params.mat'));
   squareSize = params.squareSize; 
   checkerboardPadding = params.checkerboardPadding;
   TGt = params.TGt;
 
-  imagePath = fullfile(data_path, 'img');
-  ptCloudPath = fullfile(data_path, 'pcd');
+  K = params.K;
+  D = params.D;
+  IntrinsicMatrix = K;
+  if (length(D) == 4)
+    radialDistortion = [D(1),D(2)];
+  else
+    radialDistortion = [D(1),D(2),D(5)];
+  end
+  focalLength = [K(1, 1), K(2, 2)];
+  tangentialDist = [D(3), D(4)];
+  principalPoint =[K(1,3), K(2,3)];  
+  imageSize = [params.imageHeight, params.imageWidth];
+  intrinsics = cameraIntrinsics(focalLength,principalPoint,imageSize);
+  cameraParams = cameraParameters('IntrinsicMatrix',IntrinsicMatrix,...
+    'RadialDistortion', radialDistortion,...
+    'TangentialDistortion',tangentialDist, ...
+    'imageSize', imageSize);  
+
+  imagePath = fullfile(data_path, 'img_before_select');
+  ptCloudPath = fullfile(data_path, 'pcd_before_select');
   imds = imageDatastore(imagePath); 
   pcds = fileDatastore(ptCloudPath, 'ReadFcn', @pcread); 
   for i = 1:min(length(imds.Files), params.num_data)
@@ -38,8 +54,8 @@ for data_option = 1:10
   %% Extract features
   % Extract Checkerboard corners from the images
   [imageCorners3d, checkerboardDimension, dataUsed] = ...
-      estimateCheckerboardCorners3d(imageFileNames, intrinsic.cameraParams, squareSize);
-%   helperShowImageCorners(imageCorners3d, imageFileNames, intrinsic.cameraParams)
+      estimateCheckerboardCorners3d(imageFileNames, intrinsics, squareSize);
+%   helperShowImageCorners(imageCorners3d, imageFileNames, intrinsics)
   
   imageFileNames = imageFileNames(dataUsed); % Remove image files that are not used
   % Filter point cloud files corresponding to the detected images
@@ -103,7 +119,7 @@ for data_option = 1:10
       tmp_imageFileNames = avail_imageFileNames(reidx(1:frame_num));
       tmp_lidarCheckerPlanes = avail_lidarCheckerPlanes(reidx(1:frame_num));
       [tform, errors] = estimateLidarCameraTransform(tmp_lidarCheckerPlanes, ...
-          tmp_imageCorners3d, 'CameraIntrinsic', intrinsic.cameraParams);
+          tmp_imageCorners3d, 'CameraIntrinsic', intrinsics);
       % helperFuseLidarCamera(tmp_imageFileNames, tmp_ptCloudFileNames, indices, intrinsic.cameraParams, tform);
       
       % save MATLAB calibration results
