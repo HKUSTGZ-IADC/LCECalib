@@ -16,7 +16,7 @@ save_result_flag = 1;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 6:6
+for data_option = 5:5
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   if (~exist(data_path)) 
@@ -36,11 +36,11 @@ for data_option = 6:6
   planar_weight = params.planar_weight;
 
   %% Extract features
-  img_list = dir(fullfile(data_path, 'img_before_select')); 
+  img_list = dir(fullfile(data_path, 'img')); 
   img_list = img_list(3:end);
-  pcd_list = dir(fullfile(data_path, 'pcd_before_select'));
+  pcd_list = dir(fullfile(data_path, 'pcd'));
   pcd_list = pcd_list(3:end);  
-  pcd_raw_list = dir(fullfile(data_path, 'raw_pcd_before_select'));
+  pcd_raw_list = dir(fullfile(data_path, 'raw_pcd'));
   pcd_raw_list = pcd_raw_list(3:end);
   save('tmp_lcecalib_dataset.mat', ...
     'data_path', 'data_type', 'data_option', ...
@@ -150,21 +150,6 @@ for data_option = 6:6
 %       all_lidar_pc_array_raw{reidx(1)}, all_img_undist{reidx(1)});    
 %     pcwrite(cloud_rgb, '/tmp/cloud_rgb.pcd');
   end
-  
-%   if plot_result_flag
-%     figure; hold on;
-%     lbpts = all_lidar_board_pts{reidx(1)};
-%     lepts = all_lidar_board_edge_pts{reidx(1)};
-%     cbcorner = all_cam_board_corners{reidx(1)};
-%     [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
-%     lbpts_cam = T_est_best(1:3, 1:3) * lbpts + T_est_best(1:3, 4);  % 3xN
-%     lepts_cam = T_est_best(1:3, 1:3) * lepts + T_est_best(1:3, 4);  % 3xN
-%     plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g.'); 
-%     plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r.', 'MarkerSize', 6);
-%     plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'ro', 'MarkerSize', 12);
-%     legend('cam edge pts', 'lidar board pts', 'lidar edge pts');
-%     hold off; axis equal; view(40, 10);
-%   end
   plot_result_flag = 0;
   
   %% tmp
@@ -172,7 +157,7 @@ for data_option = 6:6
   reidx = randperm(length(all_cam_board_plane_coeff));
   if plot_result_flag
     figure; hold on;
-    for idx = 1:7
+    for idx = 1:6
       lbpts = all_lidar_board_pts{idx};
       lepts = all_lidar_board_edge_pts{idx};
       cbcorner = all_cam_board_corners{idx};

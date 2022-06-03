@@ -309,7 +309,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
     mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
     me_err = sum(p_err(3, :)) / sum(p_err(4, :));  % mean edge error
     if (strcmp(data_type, 'real_data') && (data_option > 3))
-      if (mp_err + me_err < min_error)
+      if ((frame_num >= 4) && (mp_err + me_err < min_error))
         min_error = mp_err + me_err;
         T_est_best = T_est;
       end

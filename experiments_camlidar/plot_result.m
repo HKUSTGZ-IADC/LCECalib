@@ -16,14 +16,14 @@ result_mat = {'result_lcecalib_qpep.mat', 'result_baseline_zhou.mat'};
 % result_mat = {'result_lcecalib_qpep.mat', 'result_lcecalib_corner_corner.mat', 'result_baseline_zhou.mat'};
 % method = {'Ours', 'C2C'};
 % result_mat = {'result_lcecalib_qpep.mat', 'result_lcecalib_corner_corner.mat'};
-label_title = {'Simulated Data', 'Real Data'};
+label_title = {'Simulated Data', 'Real-World Data'};
 
 %% load data and extract features
 r_err_noise = zeros(length(result_mat), 10);
 t_err_noise = zeros(length(result_mat), 10);
 mp_err_noise = zeros(length(result_mat), 10);
 me_err_noise = zeros(length(result_mat), 10);
-for data_option = 1:10
+for data_option = 1:9
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   result_lcecalib_qpep = load(fullfile(data_path, 'result_lcecalib_qpep.mat'));  
   TGt = result_lcecalib_qpep.TGt;
@@ -142,13 +142,15 @@ if strcmp(data_type, 'simu_data_bias')
   ylabel("Normal Error [deg]", 'FontSize', 20);
   % title(sprintf('Normal Vector Error On %s', label_title{1}), 'FontSize', 30, 'FontName', 'Times', 'FontWeight', 'normal');
 end
+end
 
+for t = 1:1
 if strcmp(data_type, 'real_data')
   hf = figure; 
   subplot(311); hold on;
   plot(r_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   plot(r_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
-  plot(r_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
+%   plot(r_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
   grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
   set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log');
@@ -157,7 +159,7 @@ if strcmp(data_type, 'real_data')
   subplot(312); hold on;
   plot(t_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   plot(t_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
-  plot(t_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
+%   plot(t_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
   grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
   set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log');
@@ -166,31 +168,37 @@ if strcmp(data_type, 'real_data')
   subplot(313); hold on;
   plot(mp_err_noise(1, :)+me_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   plot(mp_err_noise(2, :)+me_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
-  plot(mp_err_noise(3, :)+me_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
+%   plot(mp_err_noise(3, :)+me_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   xlabel("Dataset");  
   legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
   grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
   set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log');
   ylabel("MGE [m]", 'FontSize', 20);
-  sgtitle(sprintf('Calibration Error On %s', label_title{1}), 'FontSize', 30, 'FontName', 'Times', 'FontWeight', 'normal');
+  sgtitle(sprintf('Calibration Error On %s', label_title{2}), 'FontSize', 30, 'FontName', 'Times', 'FontWeight', 'normal');
 end
 end
 
 %%
 filename = fullfile('figure', 'tmech_version2', 'err_simu_data'); print(filename, '-depsc'); saveas(hf, strcat(filename, '.fig'));
 
-%% 
-for data_option = 1:1
+%% Plot back-projection result
+for data_option = 8:9
 data_path = sprintf('data/real_data/real_data_%d/', data_option);
 params = load(fullfile(data_path, 'img/params.mat'));
 result_qpep = load(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'));
 result_zhou = load(fullfile(data_path, 'result_baseline_zhou.mat'));
-idx = 15;
-img = result_qpep.all_img_undist{idx};
+
+img = imread(fullfile(data_path, 'img_before_select/00051.png'));
+pcd = pcread(fullfile(data_path, 'pcd_before_select/00051.pcd'));
+pcd_raw = pcread(fullfile(data_path, 'raw_pcd_before_select/00051.pcd'));
+[img_undist, camParams] = undistort_image(img, params.K, params.D);
+[lidar_board_pts, ~, ~] = boardpts_ext(pcd.Location', params.borW, params.borH, data_type);
+lidar_board_edge_pts_idx = find_pts_ring_edges(lidar_board_pts);
+lidar_board_edge_pts = lidar_board_pts(:, lidar_board_edge_pts_idx);  
+
 p = zeros(2, 1);
-hf = figure; imshow(img); hold on;
-lidar_pc_array_raw = result_qpep.all_lidar_board_pts_raw{idx};
-lidar_pc_array_raw = lidar_pc_array_raw(1:3, :);
+figure; imshow(img_undist); hold on;
+lidar_pc_array_raw = lidar_board_pts(1:3, :);
 cam_pts = zeros(2, 0);
 for i = 1:size(lidar_pc_array_raw, 2)
   if lidar_pc_array_raw(1, i) <= 0
@@ -205,8 +213,7 @@ for i = 1:size(lidar_pc_array_raw, 2)
 end
 p(1) = plot(cam_pts(1, :), cam_pts(2, :), 'g*', 'LineStyle', 'none', 'MarkerSize', 3);
 
-lidar_pc_array_raw = result_qpep.all_lidar_pc_array_raw{idx};
-lidar_pc_array_raw = lidar_pc_array_raw(1:3, :);
+lidar_pc_array_raw = pcd_raw.Location';
 cam_pts = zeros(2, 0);
 for i = 1:size(lidar_pc_array_raw, 2)
   if lidar_pc_array_raw(1, i) <= 0
@@ -220,9 +227,8 @@ for i = 1:size(lidar_pc_array_raw, 2)
   end
 end
 p(2) = plot(cam_pts(1, :), cam_pts(2, :), 'r*', 'LineStyle', 'none', 'MarkerSize', 3);
-% legend(p, {'Ours', 'Zhou-MATLAB'}, 'Location', 'northOutside', 'FontSize', 25, 'NumColumns',2);
 
-lidar_pc_array_raw = result_qpep.all_lidar_board_edge_pts{idx};
+lidar_pc_array_raw = lidar_board_edge_pts(1:3, :);
 cam_pts = zeros(2, 0);
 for i = 1:size(lidar_pc_array_raw, 2)
   if lidar_pc_array_raw(1, i) <= 0
@@ -250,6 +256,7 @@ for i = 1:size(lidar_pc_array_raw, 2)
 end
 plot(cam_pts(1, :), cam_pts(2, :), 'ro', 'LineStyle', 'none', 'MarkerSize', 12, 'LineWidth', 3);
 set(gca, 'FontName', 'Times');
+hold off;
 end
 
 %%
@@ -263,13 +270,13 @@ data_type = 'real_data';
 
 method = {'Ours', 'Zhou-Matlab'};
 result_mat = {'result_lcecalib_qpep.mat', 'result_baseline_zhou.mat'};
-for data_option = 1:3
+for data_option = 6:6
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   result_lcecalib_qpep = load(fullfile(data_path, 'result_lcecalib_qpep.mat'));  
   TGt = result_lcecalib_qpep.TGt;
   
-%   disp(num2str(rotm2quat(TGt(1:3, 1:3)), '$%.3f$ & '))
-%   disp(num2str(TGt(1:3, 4)', '$%.3f$ & '))
+  disp(num2str(rotm2quat(TGt(1:3, 1:3)), '$%.3f$ & '))
+  disp(num2str(TGt(1:3, 4)', '$%.3f$ & '))
   for j = 1:length(result_mat)
     result_data = load(fullfile(data_path, result_mat{j}));  
     [r_err_noise(j, data_option), t_err_noise(j, data_option), ...

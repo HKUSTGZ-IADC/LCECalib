@@ -15,7 +15,7 @@ TGt = [-0.27068     -0.94215     -0.19768      0.41853
               0            0            0            1];
 squareSize = 70;
 checkerboardPadding = [140, 140];
-num_data = 36;
+num_data = 38;
 imageWidth = 1280;
 imageHeight = 720;
 numH = 7;
@@ -89,7 +89,7 @@ TGt = [-0.27068     -0.94215     -0.19768      0.41853
               0            0            0            1];
 squareSize = 70;
 checkerboardPadding = [140, 140];
-num_data = 36;
+num_data = 38;
 imageWidth = 1280;
 imageHeight = 720;
 numH = 7;
@@ -182,7 +182,7 @@ TGt = [0.0175   -0.9998    0.0005    0.0939
             0         0         0    1.0000];
 squareSize = 68;
 checkerboardPadding = [120, 124];
-num_data = 30;
+num_data = 36;
 imageWidth = 346;
 imageHeight = 260;
 numH = 7;
@@ -230,7 +230,7 @@ TGt = [ 0.0093   -0.9999    0.0113    0.1231
              0         0         0    1.0000];
 squareSize = 68;
 checkerboardPadding = [120, 124];
-num_data = 30;
+num_data = 36;
 imageWidth = 346;
 imageHeight = 260;
 use_edge_flag = 1; 
