@@ -73,10 +73,12 @@ if is_display
     figure
     axis equal
     plot3(edge_pts(1,:),edge_pts(2,:),edge_pts(3,:),'.b', 'MarkerSize', 30);
+    plot3(bor_pts(1,:),bor_pts(2,:),bor_pts(3,:),'.r', 'MarkerSize', 30);
     hold on
     sample_pts2 = TInit(1:3,1:3)*sample_pts+TInit(1:3,4);
     plot3([corners(1,:),corners(1,1)],[corners(2,:),corners(2,1)],[corners(3,:),corners(3,1)],'-b', 'LineWidth', 4);
     plot3([corners(1,:),corners(1,1)],[corners(2,:),corners(2,1)],[corners(3,:),corners(3,1)],'.g', 'MarkerSize', 50);
+    hold off
 end
 
 end

@@ -1,2 +1,4 @@
 experiments_camlidar/data/*
+experiments_camlidar/figure/*
 *.mat
+*.m~

@@ -16,6 +16,12 @@ im = undistortImage(img,cam_param);
 
 %% detect checkerboard points and estimate the board pose
 [imagePoints,boardSize] = detectCheckerboardPoints(im);
+if (boardSize(1) == 0 || boardSize(2) == 0)
+  pts_corner = [];
+  plane_coeff = [];
+  aver_err = 0;
+  return;
+end
 worldPoints = generateCheckerboardPoints(boardSize, pattern_size);
 worldPoints = [worldPoints,zeros(size(worldPoints,1),1)];
 [worldOrientation,worldLocation] = estimateWorldCameraPose(imagePoints,worldPoints,cam_param);
@@ -47,7 +53,6 @@ end
 if isdisplay
   figure;
   imshow(im);
-  hold on;
   hold on;
   plot(worldPx(1,:),worldPx(2,:),'.r');
   plot(pc_corner_px(1,:),pc_corner_px(2,:),'-ob');
