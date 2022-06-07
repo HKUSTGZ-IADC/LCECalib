@@ -202,5 +202,7 @@ function run_lcecalib_fe()
     all_lidar_pc_array{end + 1} = lidar_pc_array;   
     all_lidar_pc_array_raw{end + 1} = lidar_pc_array_raw;
   end  
+  sprintf('ratio: %d: %f (%d, %d)', data_option, length(all_lidar_board_plane_coeff)/min(length(pcd_list), min(num_data, 60)), ...
+    length(all_lidar_board_plane_coeff), min(length(pcd_list), min(num_data, 60)))
   save('tmp_lcecalib_fe.mat');
 end

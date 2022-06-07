@@ -5,6 +5,7 @@ load('color_list.mat');
 
 format short
 
+%%
 % data_type = 'simu_data_bias';
 % data_type = 'simu_data';
 data_type = 'real_data';
@@ -26,7 +27,8 @@ me_err_noise = zeros(length(result_mat), 10);
 for data_option = 1:9
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   result_lcecalib_qpep = load(fullfile(data_path, 'result_lcecalib_qpep.mat'));  
-  TGt = result_lcecalib_qpep.TGt;
+  params = load(fullfile(data_path, 'img', 'params.mat'));  
+  TGt = params.TGt;
   
   for j = 1:length(result_mat)
     result_data = load(fullfile(data_path, result_mat{j}));  
@@ -43,7 +45,7 @@ for data_option = 1:9
       data_option, method{j}, ...
       r_err_noise(j, data_option), t_err_noise(j, data_option), ...
       mp_err_noise(j, data_option), me_err_noise(j, data_option), ...
-      mp_err_noise(j, data_option)+me_err_noise(j, data_option))
+      mp_err_noise(j, data_option)+me_err_noise(j, data_option))   
   end 
 end
 
@@ -188,6 +190,7 @@ params = load(fullfile(data_path, 'img/params.mat'));
 result_qpep = load(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'));
 result_zhou = load(fullfile(data_path, 'result_baseline_zhou.mat'));
 
+% 16 41 51
 img = imread(fullfile(data_path, 'img_before_select/00016.png'));
 pcd = pcread(fullfile(data_path, 'pcd_before_select/00016.pcd'));
 pcd_raw = pcread(fullfile(data_path, 'raw_pcd_before_select/00016.pcd'));
@@ -270,13 +273,13 @@ data_type = 'real_data';
 
 method = {'Ours', 'Zhou-Matlab'};
 result_mat = {'result_lcecalib_qpep.mat', 'result_baseline_zhou.mat'};
-for data_option = 4:5
+for data_option = 7:9
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   result_lcecalib_qpep = load(fullfile(data_path, 'result_lcecalib_qpep.mat'));  
   TGt = result_lcecalib_qpep.TGt;
   
-%   disp(num2str(rotm2quat(TGt(1:3, 1:3)), '$%.3f$ & '))
-%   disp(num2str(TGt(1:3, 4)', '$%.3f$ & '))
+  disp(num2str(rotm2quat(TGt(1:3, 1:3)), '$%.3f$ & '))
+  disp(num2str(TGt(1:3, 4)', '$%.3f$ & '))
   for j = 1:length(result_mat)
     result_data = load(fullfile(data_path, result_mat{j}));  
     [r_err_noise(j, data_option), t_err_noise(j, data_option), ...

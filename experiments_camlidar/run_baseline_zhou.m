@@ -1,5 +1,6 @@
 clc, clear; close all;
 
+addpath('tools');
 addpath('evaluation');
 
 % all_data_type = {'simu_data_bias', 'real_data'};
@@ -11,7 +12,7 @@ rng('default');
 
 for i = 1:length(all_data_type)
 data_type = all_data_type{i};
-for data_option = 8:9
+for data_option = 1:9
   sprintf('data_option: %d', data_option)
   %% parameters
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));  
@@ -46,10 +47,12 @@ for data_option = 8:9
     'TangentialDistortion',tangentialDist, ...
     'imageSize', imageSize);  
 
-  imagePath = fullfile(data_path, 'img_before_select');
-  ptCloudPath = fullfile(data_path, 'pcd_before_select');
+  imagePath = fullfile(data_path, 'img');
+  ptCloudPath = fullfile(data_path, 'pcd');
   imds = imageDatastore(imagePath); 
   pcds = fileDatastore(ptCloudPath, 'ReadFcn', @pcread); 
+  imageFileNames = {};
+  ptCloudFileNames = {};
   for i = 1:min(length(imds.Files), params.num_data)
     imageFileNames{i} = imds.Files{i};
     ptCloudFileNames{i} = pcds.Files{i};
@@ -65,7 +68,7 @@ for data_option = 8:9
   % Filter point cloud files corresponding to the detected images
   ptCloudFileNames = ptCloudFileNames(dataUsed);
   % Extract ROI from the detected image corners
-  roi = helperComputeROI(imageCorners3d, 3);
+  roi = helperComputeROI(imageCorners3d, 1.0);
   
   % Extract Checkerboard in lidar data
   checkerboard3DDimension = checkerboardDimension + checkerboardPadding;
@@ -76,6 +79,8 @@ for data_option = 8:9
     'DimensionTolerance', 0.4, ...
     'Verbose', true);
 %   helperShowCheckerboardPlanes(ptCloudFileNames, indices)  
+  sprintf('ratio: %d: %f (%d, %d)', data_option, sum(framesUsed)/min(length(imds.Files), params.num_data), sum(framesUsed), min(length(imds.Files), params.num_data))
+  continue;
 
   %% Extract planes from lidar point cloud
   all_lidar_board_plane_coeff = cell(1, length(framesUsed));

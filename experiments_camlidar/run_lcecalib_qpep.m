@@ -16,7 +16,7 @@ save_result_flag = 1;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 5:5
+for data_option = 1:3
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   if (~exist(data_path)) 
@@ -52,7 +52,7 @@ for data_option = 5:5
     'visualization_flag', 'debug_flag', ...
     'save_result_flag', 'plot_result_flag');
   run_lcecalib_fe();
-  
+  continue;
   %% QPEP-pTop based extrinsic calibration
   all_iterations = 100;
   edge_iterations = 3;
@@ -157,19 +157,23 @@ for data_option = 5:5
   reidx = randperm(length(all_cam_board_plane_coeff));
   if plot_result_flag
     figure; hold on;
-    for idx = 1:6
+    for idx = 1:8
       lbpts = all_lidar_board_pts{idx};
       lepts = all_lidar_board_edge_pts{idx};
       cbcorner = all_cam_board_corners{idx};
       [cbedge, cbedge_dir] = generateBoardPtsFromCorner(cbcorner);
       lbpts_cam = T_est_best(1:3, 1:3) * lbpts + T_est_best(1:3, 4);  % 3xN
       lepts_cam = T_est_best(1:3, 1:3) * lepts + T_est_best(1:3, 4);  % 3xN
-      plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g.'); 
-      plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r.', 'MarkerSize', 6);
-      plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'ro', 'MarkerSize', 12);
+      plot3(cbedge(1, :), cbedge(2, :), cbedge(3, :), 'g.', 'MarkerSize', 6); 
+      plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r*', 'MarkerSize', 2.5);
+      plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'bo', 'MarkerSize', 12, 'LineWidth', 2);
 %       legend('cam edge pts', 'lidar board pts', 'lidar edge pts');
     end
     hold off; axis equal; view(40, 10);
+    legend({'Camera Edge Points', 'LiDAR Planar Points', 'LiDAR Edge Points'}, 'Location', 'northeast', 'FontSize', 20);
+    grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
+    set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2);
+    xlabel("X [m]"); ylabel("Y [m]"); zlabel("Z [m]");
   end  
   plot_result_flag = 0;
 end

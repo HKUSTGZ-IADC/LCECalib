@@ -18,7 +18,7 @@ for idx = 1:size(cam_corners,2)
             min_idx = cam_idx;
           end
        end
-       if min_dis<10
+       if min_dis < 10
           pts_ref = [pts_ref,cur_cam_corner(:,min_idx)];
           pts_mov = [pts_mov,cur_pc_corner(:,idxidx)];
        end

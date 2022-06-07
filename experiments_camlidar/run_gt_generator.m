@@ -27,9 +27,9 @@ for data_option = 4:4
   num_data = params.num_data;
 
   %% Extract features
-  img_list = dir(fullfile(data_path, 'img')); 
+  img_list = dir(fullfile(data_path, 'img_gtdata')); 
   img_list = img_list(3:end);
-  pcd_list = dir(fullfile(data_path, 'pcd'));
+  pcd_list = dir(fullfile(data_path, 'pcd_gtdata'));
   pcd_list = pcd_list(3:end);  
 
   all_cam_board_corners = {};
@@ -76,14 +76,14 @@ for data_option = 4:4
     all_cam_board_plane_coeff(1:end), ...
     all_lidar_board_corners(1:end), ...
     all_lidar_board_plane_coeff(1:end), ...
-    1:length(all_cam_board_plane_coeff(1:end)));
+    1:length(all_cam_board_plane_coeff(1:end)))
   
   %% Visualize GT results
   figure; 
   hold on;
   pl = zeros(1, 2);
   for i = 1:length(all_cam_board_corners)
-    img_list(i).name
+%     img_list(i).name
     % project 3D camera corners
     cam_board_corners = all_cam_board_corners{i};
     project_cam_board_corners = zeros(2, 0);
@@ -98,26 +98,28 @@ for data_option = 4:4
       project_lidar_board_corners(:, end + 1) = ...
         worldpts_to_cam(lidar_board_corners(:, j), T_est(1:3, 1:3), T_est(1:3, 4), K);
     end
-    if (i == 1)
-%       hold off;
-      pl(1) = plot(project_cam_board_corners(1, :), project_cam_board_corners(2, :), 'bo', 'MarkerSize', 10);
-%       hold on;
-      pl(2) = plot(project_lidar_board_corners(1, :), project_lidar_board_corners(2, :), 'r*', 'MarkerSize', 10);
-%       hold off;
-    else
-%       hold off;
-      plot(project_cam_board_corners(1, :), project_cam_board_corners(2, :), 'bo', 'MarkerSize', 10);
-%       hold on;
-      plot(project_lidar_board_corners(1, :), project_lidar_board_corners(2, :), 'r*', 'MarkerSize', 10);      
-%       hold off;
-    end
+%     if (i == 1)
+% %       hold off;
+%       pl(1) = plot(project_cam_board_corners(1, :), project_cam_board_corners(2, :), 'bo', 'MarkerSize', 10);
+% %       hold on;
+%       pl(2) = plot(project_lidar_board_corners(1, :), project_lidar_board_corners(2, :), 'r*', 'MarkerSize', 10);
+% %       hold off;
+%     else
+% %       hold off;
+%       plot(project_cam_board_corners(1, :), project_cam_board_corners(2, :), 'bo', 'MarkerSize', 10);
+% %       hold on;
+%       plot(project_lidar_board_corners(1, :), project_lidar_board_corners(2, :), 'r*', 'MarkerSize', 10);      
+% %       hold off;
+%     end
+    pl(1) = plot3(cam_board_corners(1, :), cam_board_corners(2, :), cam_board_corners(3, :), 'bo', 'MarkerSize', 10);
+    lidar_board_corners = T_est(1:3, 1:3) * lidar_board_corners + T_est(1:3, 4);
+    pl(2) = plot3(lidar_board_corners(1, :), lidar_board_corners(2, :), lidar_board_corners(3, :), 'r*', 'MarkerSize', 10);
   end
   legend(pl, 'Camera Pts', 'Projected Pts', 'Location', 'northeastOutside', 'FontSize', 25);
   grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
   set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2);
   
   %%
-  figure; 
   for idx = 1:length(all_lidar_array)
 %   for idx = 1:10
     figure;
