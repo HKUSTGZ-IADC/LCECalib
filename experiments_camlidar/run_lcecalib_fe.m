@@ -38,22 +38,13 @@ function run_lcecalib_fe()
       
     img_raw = imread(img_file);
     pc = pcread(pcd_file);
-    lidar_pc_array = pc.Location()';
+    pc = removeInvalidPoints(pc);
     pc_raw = pcread(pcd_raw_file);
-    lidar_pc_array_raw = pc_raw.Location()';
+    pc_raw = removeInvalidPoints(pc);
 
     %% image: feature extraction
     [img_undist, camParams] = undistort_image(img_raw, K, D);
     [imagePoints, boardSize] = detectCheckerboardPoints(img_undist);
-    if debug_flag
-      img_undist_checkerboard_pts = img_undist;
-      img_undist_checkerboard_pts = insertMarker(...
-        img_undist_checkerboard_pts, imagePoints(1:5, :), ...
-        'o', 'Color', 'red', 'Size', 10);
-      fig = figure; 
-      imshow(img_undist_checkerboard_pts);
-      close(fig);
-    end
     if (boardSize(1) == 0 || boardSize(2) == 0 || ...
         boardSize(1) ~= numH || boardSize(2) ~= numW)
       continue;
@@ -101,7 +92,7 @@ function run_lcecalib_fe()
     cam_board_center_on_plane = cam_board_center;
     cam_board_center_on_plane(3) = -((d + n(1:2)' * cam_board_center(1:2)) / n(3));
 
-    debug_flag = 0;
+    debug_flag = 1;
     if debug_flag
       worldPx = worldpts_to_cam(worldPoints', T(1:3, 1:3), T(1:3, 4), K);
       pc_corner_px = worldpts_to_cam(cam_board_corners, eye(3, 3), zeros(3, 1), K);
@@ -118,10 +109,24 @@ function run_lcecalib_fe()
 %       tmp_corners(:, size(cam_board_corners, 2) + 1) = cam_board_corners(:, 1);
 %       plot3(tmp_corners(1, :), tmp_corners(2, :), tmp_corners(3, :), '-ob');
       sgtitle('Projected 3D corners and patterns');
-%       close(fig);
+      close(fig);
     end
+    debug_flag = 0;
 
-    %% lidar: feature extraction        
+    %% lidar: feature extraction
+    if strcmp(data_type, 'apollo_data')
+      roi = computeLiDARROI(cam_board_corners, 2.0);
+      indices = findPointsInROI(pc, roi);
+      pc_roi = select(pc, indices);
+      lidar_pc_array = reshape(pc_roi.Location(), [], 3)';
+      indices = findPointsInROI(pc_raw, roi);
+      pc_roi = select(pc_raw, indices);
+      lidar_pc_array_raw = reshape(pc_roi.Location(), [], 3)';
+    else
+      lidar_pc_array = reshape(pc.Location(), [], 3)';
+      lidar_pc_array_raw = reshape(pc_raw.Location(), [], 3)';
+    end
+    
     % extract board points and coefficients
     [lidar_board_pts, lidar_board_plane_coeff, ~] = ...
       boardpts_ext(lidar_pc_array, borW, borH, data_type);
@@ -175,7 +180,7 @@ function run_lcecalib_fe()
       end         
     end
 
-    debug_flag = 0;
+    debug_flag = 1;
     if debug_flag
       fig = figure; 
       hold on;
@@ -186,6 +191,7 @@ function run_lcecalib_fe()
       axis equal;
       close(fig);
     end
+    debug_flag = 0;
 
     %% save feature extraction results
     all_cam_board_corners{end + 1} = cam_board_corners;

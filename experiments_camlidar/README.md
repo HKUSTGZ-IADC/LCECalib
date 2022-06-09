@@ -13,14 +13,15 @@ LiDAR-Camera Extrinsic Calibration
    
 2. please prepare camera intrinsics, board hyperparameters of the code
 
-   * calibrate intrinsics of the camera using prepared data
-   * modify parameters in *parameters_to_matlab.m* and run the code
-   * save *params.mat* and *calibration.mat* in the data folder
+   * calibrate intrinsics of the camera using prepared data: using *CameraCalibrator* in MATLAB
+   * modify parameters in *params_to_matlab.m* and run the code with calibrated intrinsics
+   * save *params.mat* in the data folder
 
 3. Data used in the TMech paper
 
    * Download link: http://gofile.me/4jm56/wuo1qjH7Q
-   * simu_data/{noise-free, noise-0.015, noise-0.03}: data subjected to std={0, 0.015, 0.03} Gaussian noise
+   * simu_data/
+     * simu_data_1 - simu_data_10: 
    * real_data/
      * real_data_1 - real_data_3: *RLFS01* - *RLFS03*
      * real_data_4 - real_data_9: *RLES01-LF*, *RLES01-LE*, *RLES02-LF*, *RLES02-LE*, *RLES03-LF*, *RLES03-LE*

@@ -20,8 +20,14 @@ maxdistance = 0.04;
 
 % only use points whose distance less than search_radius
 pts_in_norm  = vecnorm(pts_raw_in(1:3, :));
-idx = find(pts_in_norm<search_radius);
-pts_in = pts_raw_in(:, idx);
+if strcmp(data_type, 'apollo_data1') 
+  pts_in = pts_raw_in;
+  min_err_thres = 0.08;
+  dbscan_elpson = 0.5;
+else
+  idx = find(pts_in_norm<search_radius);
+  pts_in = pts_raw_in(:, idx);
+end
 
 %% main program
 % ======= extract ring information
@@ -56,8 +62,10 @@ end
 % ======= preprocess point cloud
 if strcmp(data_type, 'simu_data')
   pts_potional = pts_in(1:4, :);
-else if strcmp(data_type, 'simu_data_bias')
-  pts_potional = pts_in(1:4, :);  
+elseif strcmp(data_type, 'simu_data_bias')
+  pts_potional = pts_in(1:4, :);
+elseif strcmp(data_type, 'apollo_data1')
+  pts_potional = pts_in(1:4, :);
 else
   pts_potional = [];
   for angle = minRange:intRange:maxRange
@@ -186,7 +194,11 @@ for index = 1:size(idx,1)
 end
 
 % use dbscan to remove outliers
-idx = dbscan(min_cluster(1:3, :)',0.18,10);
+if strcmp(data_type, 'apollo_data')
+  idx = dbscan(min_cluster(1:3, :)', dbscan_elpson, 10);
+else
+  idx = dbscan(min_cluster(1:3, :)',0.18,10);
+end
 idx_max = 0 ;
 max_size = 0;
 for idx_num = 1: max(idx)
@@ -206,16 +218,12 @@ min_err = match_error(template_pts, ptCloudOut.Location()', min_transform);
     
 error_out = min_err;
 if min_err > min_err_thres
-    disp("no tag");
-    pts_out = [];
-    plane_model = [];
+  disp("no tag");
+  pts_out = [];
+  plane_model = [];
 else
-%     pts_out = min_cluster;
-%     pts_in_ele_normal = -pinv(pts_out(1:3, :)') * ones(size(pts_out, 2),1);
-%     plane_model = [pts_in_ele_normal;1];
-%     plane_model = plane_model ./norm(pts_in_ele_normal );
-    pts_out = min_cluster;
-    plane_model = model;
+  pts_out = min_cluster;
+  plane_model = model;
 end
 
 end
