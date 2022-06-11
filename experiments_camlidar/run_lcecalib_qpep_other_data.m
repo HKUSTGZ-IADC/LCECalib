@@ -5,7 +5,8 @@ add_path_qpep;
 
 format short
 
-data_type = 'apollo_data';
+% data_type = 'apollo_data';
+data_type = 'fp_data_20220424';
 
 visualization_flag = 0;
 debug_flag = 0;
@@ -13,7 +14,7 @@ save_result_flag = 1;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 2:2
+for data_option = 1:1
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   if (~exist(data_path)) 
@@ -49,10 +50,11 @@ for data_option = 2:2
     'visualization_flag', 'debug_flag', ...
     'save_result_flag', 'plot_result_flag');
   run_lcecalib_fe();
+  
   %% QPEP-pTop based extrinsic calibration
-  all_iterations = 20;
-  edge_iterations = 1;
-  start_frame = 1;
+  all_iterations = 50;
+  edge_iterations = 3;
+  start_frame = 20;
   end_frame = num_data;
   run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_frame); 
   load('tmp_lcecalib_opt.mat');
@@ -74,7 +76,8 @@ for data_option = 2:2
       'all_lidar_board_pts_raw', ...
       'all_lidar_board_pts', ...
       'all_lidar_board_edge_pts', ...
-      'all_lidar_board_plane_coeff');
+      'all_lidar_board_plane_coeff', ...
+      'params');
 
     save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
       'data_type', 'data_option', ...  
@@ -94,7 +97,8 @@ for data_option = 2:2
       'all_lidar_board_plane_coeff', ...
       'all_img_undist', ...
       'all_lidar_pc_array', ...
-      'all_lidar_pc_array_raw');
+      'all_lidar_pc_array_raw', ...
+      'params');
   end
   
   %% Plot results
@@ -135,11 +139,11 @@ for data_option = 2:2
   if plot_result_flag
     figure;
     subplot(121);
-    imshow(projectPointOnImage(T_est_best, K, ...
+    imshow(projectPointOnImage(T_est_best, params.K, ...
       all_lidar_pc_array_raw{idx}, all_img_undist{idx}));
     title('Projected points with Test', 'FontSize', 25);
     subplot(122);
-    imshow(projectPointOnImage(TGt, K, ...
+    imshow(projectPointOnImage(TGt, params.K, ...
       all_lidar_pc_array_raw{idx}, all_img_undist{idx}));
     title('Projected points with TGt', 'FontSize', 25);
 %     cloud_rgb = colorizePointFromImage(T_est_best, K, ...
@@ -153,7 +157,7 @@ for data_option = 2:2
   reidx = randperm(length(all_cam_board_plane_coeff));
   if plot_result_flag
     figure; hold on;
-    for idx = 1:5
+    for idx = 1:10
       lbpts = all_lidar_board_pts{idx};
       lepts = all_lidar_board_edge_pts{idx};
       cbcorner = all_cam_board_corners{idx};

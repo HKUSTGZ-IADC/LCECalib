@@ -95,15 +95,8 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   %%
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Refinement
-%   if strcmp(data_type, 'apollo_data')
-%     T_ini_best = [0 -1.0 0 0;
-%                   0 0 -1 -0.8;
-%                   1 0 0 -0.5;
-%                   0 0 0 1];  
-%   end
   T_est_best = T_ini_best;
   min_error = 1e5;
-  edge_weight = 12;
   for frame_num = start_frame : min(length(all_cam_board_plane_coeff), end_frame)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);

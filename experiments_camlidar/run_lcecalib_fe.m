@@ -10,7 +10,7 @@ function run_lcecalib_fe()
   all_img_undist = {}; 
   all_lidar_pc_array = {}; all_lidar_pc_array_raw = {};
   for idx = 1:min(length(pcd_list), min(num_data, 60))
-    if strcmp(data_type, 'fp_data')
+    if contains(data_type, 'fp_data')
       pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
       if (~exist(pcd_file)) 
         continue;
@@ -39,6 +39,7 @@ function run_lcecalib_fe()
     img_raw = imread(img_file);
     pc = pcread(pcd_file);
     pc = removeInvalidPoints(pc);
+    pc = pcdownsample(pc, 'random', 0.5);
     pc_raw = pcread(pcd_raw_file);
     pc_raw = removeInvalidPoints(pc);
 
@@ -92,7 +93,7 @@ function run_lcecalib_fe()
     cam_board_center_on_plane = cam_board_center;
     cam_board_center_on_plane(3) = -((d + n(1:2)' * cam_board_center(1:2)) / n(3));
 
-    debug_flag = 1;
+    debug_flag = 0;
     if debug_flag
       worldPx = worldpts_to_cam(worldPoints', T(1:3, 1:3), T(1:3, 4), K);
       pc_corner_px = worldpts_to_cam(cam_board_corners, eye(3, 3), zeros(3, 1), K);
@@ -104,17 +105,13 @@ function run_lcecalib_fe()
       plot(worldPx(1,:), worldPx(2,:), '.r');
       plot(pc_corner_px(1,:), pc_corner_px(2,:), '-ob');
       hold off;
-%       subplot(133); 
-%       tmp_corners = cam_board_corners;
-%       tmp_corners(:, size(cam_board_corners, 2) + 1) = cam_board_corners(:, 1);
-%       plot3(tmp_corners(1, :), tmp_corners(2, :), tmp_corners(3, :), '-ob');
       sgtitle('Projected 3D corners and patterns');
       close(fig);
     end
     debug_flag = 0;
 
     %% lidar: feature extraction
-    if strcmp(data_type, 'apollo_data')
+    if contains(data_type, 'apollo_data')
       roi = computeLiDARROI(cam_board_corners, 2.0);
       indices = findPointsInROI(pc, roi);
       pc_roi = select(pc, indices);
@@ -122,7 +119,16 @@ function run_lcecalib_fe()
       indices = findPointsInROI(pc_raw, roi);
       pc_roi = select(pc_raw, indices);
       lidar_pc_array_raw = reshape(pc_roi.Location(), [], 3)';
-    else
+    elseif contains(data_type, 'fp_data')
+      roi = computeLiDARROI(cam_board_corners, 0.5);
+      indices = findPointsInROI(pc, roi);
+      pc_roi = select(pc, indices);
+      lidar_pc_array = reshape(pc_roi.Location(), [], 3)';
+      lidar_pc_array = [lidar_pc_array; pc_roi.Intensity'];
+      
+      lidar_pc_array_raw = reshape(pc_raw.Location(), [], 3)';
+      lidar_pc_array_raw = [lidar_pc_array_raw; pc_raw.Intensity'];
+    else      
       lidar_pc_array = reshape(pc.Location(), [], 3)';
       lidar_pc_array_raw = reshape(pc_raw.Location(), [], 3)';
     end
@@ -180,7 +186,7 @@ function run_lcecalib_fe()
       end         
     end
 
-    debug_flag = 1;
+    debug_flag = 0;
     if debug_flag
       fig = figure; 
       hold on;
@@ -189,6 +195,7 @@ function run_lcecalib_fe()
       plot3(lidar_board_edge_pts(1, :), lidar_board_edge_pts(2, :), lidar_board_edge_pts(3, :), 'bo', 'MarkerSize', 10);
       hold off;
       axis equal;
+      pcd_list(idx).name
       close(fig);
     end
     debug_flag = 0;

@@ -12,19 +12,22 @@ line_maxlen= 1;
 min_err_thres = 0.06; %default 0.045 每个点到平面的平均距离，距离小于这个表示有效平面
 if strcmp(data_type, 'simu_data_bias')
   min_err_thres = 0.10;
+elseif strcmp(data_type, 'apollo_data')
+  min_err_thres = 0.8;
 end
 template_rate = 10;
 dbscan_elpson = 0.2;
 sampleSize = 5;
 maxdistance = 0.04;
 
-% only use points whose distance less than search_radius
-pts_in_norm  = vecnorm(pts_raw_in(1:3, :));
-if strcmp(data_type, 'apollo_data1') 
-  pts_in = pts_raw_in;
-  min_err_thres = 0.08;
+if contains(data_type, 'apollo_data')
   dbscan_elpson = 0.5;
+  pts_in = pts_raw_in;
+elseif contains(data_type, 'fp_data')
+  pts_in = pts_raw_in;
 else
+  % only use points whose distance less than search_radius
+  pts_in_norm  = vecnorm(pts_raw_in(1:3, :));
   idx = find(pts_in_norm<search_radius);
   pts_in = pts_raw_in(:, idx);
 end
@@ -46,14 +49,15 @@ if (size(pts_in, 1) == 3) % not use ring information
   maxRange = 15.0;  % maximum angle
   intRange = 2.0; 
 else % extract ring points
-  Alpha = zeros(1, size(pts_in, 2));
-  for index = 1:size(pts_in, 2)
-      R = norm(pts_in(:, index));
-      z = pts_in(3, index);
-      alpha = atan2d(pts_in(2,index), pts_in(1,index)) + 180;
-      Alpha(index, 1) = alpha;
-  end
-  pts_in = [pts_in; Alpha];  % pts: 5xN matrix
+%   Alpha = zeros(1, size(pts_in, 2));
+%   for index = 1:size(pts_in, 2)
+%     R = norm(pts_in(:, index));
+%     z = pts_in(3, index);
+%     alpha = atan2d(pts_in(2,index), pts_in(1,index)) + 180;
+%     Alpha(index, 1) = alpha;
+%   end
+  alpha = atan2d(pts_in(2, :), pts_in(1, :)) + 180;
+  pts_in = [pts_in; alpha];  % pts: 5xN matrix
   minRange = min(pts_in(4, :));  % minimum ring
   maxRange = max(pts_in(4, :));  % maximum ring
   intRange = 1;
@@ -63,8 +67,6 @@ end
 if strcmp(data_type, 'simu_data')
   pts_potional = pts_in(1:4, :);
 elseif strcmp(data_type, 'simu_data_bias')
-  pts_potional = pts_in(1:4, :);
-elseif strcmp(data_type, 'apollo_data1')
   pts_potional = pts_in(1:4, :);
 else
   pts_potional = [];
@@ -111,7 +113,7 @@ else
             clusters_pts =[clusters_pts,sorted_ring_pts(:,valid_idx)];
             dis = norm(clusters_pts(:,1) - clusters_pts(:,end));
 
-            if size(clusters_pts,2)>15 && dis<line_maxlen
+            if size(clusters_pts,2)>5 && dis<line_maxlen
                 [coeff,score,latent]=pca(clusters_pts');
                 alpha1d = (latent(1)-latent(2))/latent(1);
                 if alpha1d>eigen_thres
@@ -195,9 +197,9 @@ end
 
 % use dbscan to remove outliers
 if strcmp(data_type, 'apollo_data')
-  idx = dbscan(min_cluster(1:3, :)', dbscan_elpson, 10);
+  idx = dbscan(min_cluster(1:3, :)', 0.5, 10);
 else
-  idx = dbscan(min_cluster(1:3, :)',0.18,10);
+  idx = dbscan(min_cluster(1:3, :)', 0.18, 10);
 end
 idx_max = 0 ;
 max_size = 0;

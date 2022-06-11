@@ -8,7 +8,7 @@ if (size(img_rgb, 3) == 1)
 else
   img_out = img_rgb;
 end
-pts_in = [pts_in;ones(1,size(pts_in,2))];
+pts_in = [pts_in(1:3, :);ones(1,size(pts_in,2))];
 pts_trans = transformation*pts_in;
 idx = find(pts_trans(3,:)>0);
 pts_valid = pts_trans(1:3,idx);
@@ -46,10 +46,10 @@ pts_valid(3,idx) = 20;
 idx = find(pts_valid(3,:)<1);
 pts_valid(3,idx) = 1;
 for index = 1: size(pro_pt,2)
-%     pts_x = [-1,-1,-1,0,0,0,1,1,1];
-%     pts_y = [-1,0,1,-1,0,1,-1,0,1];
-    pts_x = [-1, 0, 1, 0, 0];
-    pts_y = [0, 0, 0, -1, 1];
+    pts_x = [-1,-1,-1,0,0,0,1,1,1];
+    pts_y = [-1,0,1,-1,0,1,-1,0,1];
+%     pts_x = [-1, 0, 1, 0, 0];
+%     pts_y = [0, 0, 0, -1, 1];
 %     pts_x = [0];
 %     pts_y = [0];
     pixel_xy = [pts_x;pts_y];

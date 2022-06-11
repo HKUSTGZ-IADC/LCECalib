@@ -11,14 +11,18 @@ xCamera = imageCorners3d(1, :);
 yCamera = imageCorners3d(2, :);
 zCamera = imageCorners3d(3, :);
 
-xMaxLidar = max(zCamera) + tolerance;
-xMinLidar = min(zCamera) - tolerance;
+xLiDAR = zCamera;
+yLiDAR = -xCamera;
+zLiDAR = -yCamera;
 
-yMaxLidar = max(xCamera) + tolerance;
-yMinLidar = min(xCamera) - tolerance;
+xMaxLidar = max(xLiDAR) + tolerance;
+xMinLidar = min(xLiDAR) - tolerance;
 
-zMaxLidar = max(yCamera) + tolerance;
-zMinLidar = min(yCamera) - tolerance;
+yMaxLidar = max(yLiDAR) + tolerance;
+yMinLidar = min(yLiDAR) - tolerance;
+
+zMaxLidar = max(zLiDAR) + tolerance;
+zMinLidar = min(zLiDAR) - tolerance;
 
 roi = [xMinLidar, xMaxLidar, yMinLidar, yMaxLidar, zMinLidar, zMaxLidar];
 end
