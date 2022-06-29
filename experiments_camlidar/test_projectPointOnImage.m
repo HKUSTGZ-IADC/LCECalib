@@ -2,10 +2,11 @@ clc, clear; close all;
 
 addpath('tools');
 %%
-data_path = fullfile('data', 'fp_data_20220424', strcat('fp_data_20220424', '_', num2str(3)));
+data_path = fullfile('data', 'fp_data_20220424', strcat('fp_data_20220424', '_', num2str(1)));
 params = load(fullfile(data_path, 'img/params.mat'));
 result_qpep = load(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'));
 
+data_path = fullfile('data', 'fp_data_20220424', strcat('fp_data_20220424', '_', num2str(3)));
 img_filename = fullfile(data_path, 'img', '000000.png');
 pcd_filename = fullfile(data_path, 'pcd', '000000_crop.pcd');
 img = imread(img_filename);
