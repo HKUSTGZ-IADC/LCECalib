@@ -12,11 +12,27 @@ data_type = 'real_data';
 
 visualization_flag = 0;
 debug_flag = 0;
-save_result_flag = 0;
+save_result_flag = 1;
 plot_result_flag = 0;
 
+%% setting parameters for the ablation study
+flg_point_projection = 1;
+flg_outlier_rejection = 1;
+flg_use_iter_num = 10;
+flg_use_ptp = 1;
+flg_use_ptl = 1;
+% output result: result_lcecalib_qpep_sensor_data_\
+%                 (flg_point_projection)_\
+%                 (flg_outlier_rejection)_\
+%                 (flg_use_iter_num)_\
+%                 (flg_use_ptp)_\
+%                 (flg_use_ptl).mat
+save('tmp_lcecalib_ablation_study_setup.mat', ...
+  'flg_point_projection', 'flg_outlier_rejection', 'flg_use_iter_num', ...
+  'flg_use_ptp', 'flg_use_ptl');
+  
 %% load data and extract features
-for data_option = 1:3
+for data_option = 1:1
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   if (~exist(data_path)) 
@@ -52,6 +68,7 @@ for data_option = 1:3
     'visualization_flag', 'debug_flag', ...
     'save_result_flag', 'plot_result_flag');
   run_lcecalib_fe();
+
   %% QPEP-pTop based extrinsic calibration
   all_iterations = 100;
   edge_iterations = 3;
@@ -61,8 +78,17 @@ for data_option = 1:3
   load('tmp_lcecalib_opt.mat');
   
   %%
+% output result: result_lcecalib_qpep_sensor_data_\
+%                 (flg_point_projection)_\
+%                 (flg_outlier_rejection)_\
+%                 (flg_use_iter_num)_\
+%                 (flg_use_ptp)_\
+%                 (flg_use_ptl).mat  
   if save_result_flag
-    save(fullfile(data_path, 'result_lcecalib_qpep.mat'), ...
+    resultname = sprintf('result_lcecalib_qpep_%d_%d_%d_%d_%d.mat', ...
+      flg_point_projection, flg_outlier_rejection, flg_use_iter_num, ...
+      flg_use_ptp, flg_use_ptl);
+    save(fullfile(data_path, resultname), ...
       'data_type', 'data_option', ...
       'all_t_err', 'all_r_err', 'all_mp_err', 'all_me_err', ...
       'select_t_err', 'select_r_err', 'select_mp_err', 'select_me_err', ...
@@ -79,6 +105,9 @@ for data_option = 1:3
       'all_lidar_board_edge_pts', ...
       'all_lidar_board_plane_coeff');
 
+    resultname = sprintf('result_lcecalib_qpep_sensor_data_%d_%d_%d_%d_%d.mat', ...
+      flg_point_projection, flg_outlier_rejection, flg_use_iter_num, ...
+      flg_use_ptp, flg_use_ptl);
     save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
       'data_type', 'data_option', ...  
       'all_t_err', 'all_r_err', 'all_mp_err', 'all_me_err', ...
@@ -155,8 +184,8 @@ for data_option = 1:3
   plot_result_flag = 1;
   reidx = randperm(length(all_cam_board_plane_coeff));
   if plot_result_flag
-%     figure; hold on;
-    for idx = 1:5
+    figure; hold on;
+    for idx = 1:8
       lbpts = all_lidar_board_pts{idx};
       lepts = all_lidar_board_edge_pts{idx};
       cbcorner = all_cam_board_corners{idx};
@@ -167,12 +196,12 @@ for data_option = 1:3
       plot3(lbpts_cam(1, :), lbpts_cam(2, :), lbpts_cam(3, :), 'r*', 'MarkerSize', 2.5);
       plot3(lepts_cam(1, :), lepts_cam(2, :), lepts_cam(3, :), 'bo', 'MarkerSize', 12, 'LineWidth', 2);
 %       legend('cam edge pts', 'lidar board pts', 'lidar edge pts');
-      hold off; axis equal; view(40, 10);
-      legend({'Camera Edge Points', 'LiDAR Planar Points', 'LiDAR Edge Points'}, 'Location', 'northeast', 'FontSize', 15);
-      grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
-      set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2);
-      xlabel("X [m]"); ylabel("Y [m]"); zlabel("Z [m]");
     end
+    hold off; axis equal; view(40, 10);
+    legend({'Camera Edge Points', 'LiDAR Planar Points', 'LiDAR Edge Points'}, 'Location', 'northeast', 'FontSize', 20);
+    grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
+    set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2);
+    xlabel("X [m]"); ylabel("Y [m]"); zlabel("Z [m]");
   end  
   plot_result_flag = 0;
 end

@@ -1,6 +1,12 @@
 function run_lcecalib_fe()
   load('tmp_lcecalib_dataset.mat');
+  if (exist('tmp_lcecalib_ablation_study_setup.mat'))
+    load('tmp_lcecalib_ablation_study_setup.mat');
+  else
+    flg_point_projection = 1;
+  end
   
+  %% 
   all_cam_board_corners = {}; 
   all_cam_board_centers = {}; all_cam_board_centers_on_plane = {};
   all_cam_board_plane_coeff = {}; all_cam_board_plane_coeff_cov = {}; 
@@ -140,23 +146,26 @@ function run_lcecalib_fe()
     if (isempty(lidar_board_pts))
       continue;
     end
+    
     % data in simu_data_bias may contains extremely large noise
     % the ransac for plane extraction may modify the parameter
     if (strcmp(data_type, 'simu_data_bias') && (data_option > 5))  % noise-0.048 and above
       [lidar_board_plane_coeff, inlierIdx] = plane_ransac(lidar_board_pts(1:3, :), 0.05);
       lidar_board_pts = lidar_board_pts(:, inlierIdx);
 
-      n = lidar_board_plane_coeff(1:3);
-      d = lidar_board_plane_coeff(4);
-      pts_on_plane = lidar_board_pts(1:3, 1);
-      pts_on_plane(3) = -((d + n(1:2)' * pts_on_plane(1:2)) / n(3));
-      
-      for ptid = 1:size(lidar_board_pts, 2)
-        pt = lidar_board_pts(1:3, ptid);
-        v = pt - pts_on_plane;
-        pt_onboard = pts_on_plane + v - (v' * n * n);
-        lidar_board_pts(1:3, ptid) = pt_onboard;
-      end  
+      % project board pts onto the fitted plane
+      if (flg_point_projection)
+        n = lidar_board_plane_coeff(1:3);
+        d = lidar_board_plane_coeff(4);
+        pts_on_plane = lidar_board_pts(1:3, 1);
+        pts_on_plane(3) = -((d + n(1:2)' * pts_on_plane(1:2)) / n(3));
+        for ptid = 1:size(lidar_board_pts, 2)
+          pt = lidar_board_pts(1:3, ptid);
+          v = pt - pts_on_plane;
+          pt_onboard = pts_on_plane + v - (v' * n * n);
+          lidar_board_pts(1:3, ptid) = pt_onboard;
+        end  
+      end
       
       % extract edge points    
       lidar_board_edge_pts_idx = find_pts_ring_edges(lidar_board_pts);
@@ -166,24 +175,25 @@ function run_lcecalib_fe()
       lidar_board_edge_pts_idx = find_pts_ring_edges(lidar_board_pts);
       lidar_board_edge_pts = lidar_board_pts(:, lidar_board_edge_pts_idx);  
       
-      n = lidar_board_plane_coeff(1:3);
-      d = lidar_board_plane_coeff(4);
-      pts_on_plane = lidar_board_pts(1:3, 1);
-      pts_on_plane(3) = -((d + n(1:2)' * pts_on_plane(1:2)) / n(3));
-      
-      for ptid = 1:size(lidar_board_pts, 2)
-        pt = lidar_board_pts(1:3, ptid);
-        v = pt - pts_on_plane;
-        pt_onboard = pts_on_plane + v - (v' * n * n);
-        lidar_board_pts(1:3, ptid) = pt_onboard;
-      end   
-      
-      for ptid = 1:size(lidar_board_edge_pts, 2)
-        pt = lidar_board_edge_pts(1:3, ptid);
-        v = pt - pts_on_plane;
-        pt_onboard = pts_on_plane + v - (v' * n * n);
-        lidar_board_edge_pts(1:3, ptid) = pt_onboard;
-      end         
+      % project board pts onto the fitted plane 
+      if (flg_point_projection)
+        n = lidar_board_plane_coeff(1:3);
+        d = lidar_board_plane_coeff(4);
+        pts_on_plane = lidar_board_pts(1:3, 1);
+        pts_on_plane(3) = -((d + n(1:2)' * pts_on_plane(1:2)) / n(3));
+        for ptid = 1:size(lidar_board_pts, 2)
+          pt = lidar_board_pts(1:3, ptid);
+          v = pt - pts_on_plane;
+          pt_onboard = pts_on_plane + v - (v' * n * n);
+          lidar_board_pts(1:3, ptid) = pt_onboard;
+        end   
+        for ptid = 1:size(lidar_board_edge_pts, 2)
+          pt = lidar_board_edge_pts(1:3, ptid);
+          v = pt - pts_on_plane;
+          pt_onboard = pts_on_plane + v - (v' * n * n);
+          lidar_board_edge_pts(1:3, ptid) = pt_onboard;
+        end        
+      end
     end
 
     debug_flag = 0;

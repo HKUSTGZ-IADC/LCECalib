@@ -1,5 +1,9 @@
 ### LCECalib: Automatic Checkboard-Based LiDAR-Frame Camera-Event Camera Extrinsic Calibration
 
+#### Code Preparation
+1. ```git clone http://gitlab.ram-lab.com/ramlab_dataset_sensor/multisensor_calibration/lcecalib```
+2. ```git clone http://gitlab.ram-lab.com/ramlab_dataset_sensor/multisensor_calibration/libqpep```
+
 #### Dataset Preparation
 1. Please prepare data according to below folder structure
    * fp_data_20220424/fp_data_20220424_1
@@ -10,6 +14,7 @@
    * Modify parameters in *fp_data_20220424/params_to_matlab.m*
    * Run *fp_data_20220424/params_to_matlab.m*
    * Parameters *params.mat* will be stored in *img/*
+
 #### Download Example Data
 1. Data used in the TMech paper: http://gofile.me/4jm56/wuo1qjH7Q
    * simu_data/

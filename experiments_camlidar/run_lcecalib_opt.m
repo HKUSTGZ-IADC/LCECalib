@@ -1,6 +1,18 @@
 function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_frame)
   load('tmp_lcecalib_fe.mat');
+  if (exist('tmp_lcecalib_ablation_study_setup.mat'))
+    load('tmp_lcecalib_ablation_study_setup.mat');
+    all_iterations = flg_use_iter_num;
+    use_planar_flag = flg_use_ptp;
+    use_edge_flag = flg_use_ptl;
+  else
+    flg_outlier_rejection = 1;
+%     flg_use_iter_num = 100;
+%     flg_use_ptp = 1;
+%     flg_use_ptl = 1;
+  end
 
+  %% 
   all_t_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_r_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
   all_mp_err = zeros(all_iterations, length(all_cam_board_plane_coeff));
@@ -141,16 +153,10 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
               n1 = n1 / norm(n1);
               n2 = cross(n1, p1p2);
               n2 = n2 / norm(n2);
-              
-%               reference_pts = [reference_pts; corre_cbedge(1:3, j)'];
-%               reference_normals = [reference_normals; n1'];
-%               target_pts = [target_pts; lepts(:, j)'];
-%               target_normals = [target_normals; [0 0 0]];
-              
               reference_pts = [reference_pts; corre_cbedge(1:3, j)'];
               reference_normals = [reference_normals; n2'];
               target_pts = [target_pts; lepts(:, j)'];
-              target_normals = [target_normals; [0 0 0]];
+              target_normals = [target_normals; [0 0 0]];  
               
               stds = [stds; 0.0];
               point_cnt = point_cnt + 1;
@@ -199,9 +205,11 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
           weights = weights / point_cnt;
         end
         % remove outlier data
-        stds_sort = sort(stds, 'ascend');
-        std_threshold = stds_sort(floor(length(stds_sort) * 0.9));
-        weights(stds >= std_threshold) = 0;
+        if (flg_outlier_rejection)
+          stds_sort = sort(stds, 'ascend');
+          std_threshold = stds_sort(floor(length(stds_sort) * 0.9));
+          weights(stds >= std_threshold) = 0;
+        end
 
         % QPEP-PTop using both edge and planar constraints
         [R_cam_lidar, t_cam_lidar, ~, ~, ~] = qpep_pTop(...

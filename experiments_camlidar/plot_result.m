@@ -6,9 +6,9 @@ load('color_list.mat');
 format short
 
 %%
-% data_type = 'simu_data_bias';
+data_type = 'simu_data_bias';
 % data_type = 'simu_data';
-data_type = 'real_data';
+% data_type = 'real_data';
 % data_type = 'fp_data';
 
 method = {'Ours', 'Zhou-Matlab'};
@@ -24,7 +24,7 @@ r_err_noise = zeros(length(result_mat), 10);
 t_err_noise = zeros(length(result_mat), 10);
 mp_err_noise = zeros(length(result_mat), 10);
 me_err_noise = zeros(length(result_mat), 10);
-for data_option = 1:9
+for data_option = 1:10
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   result_lcecalib_qpep = load(fullfile(data_path, 'result_lcecalib_qpep.mat'));  
   params = load(fullfile(data_path, 'img', 'params.mat'));  
@@ -109,39 +109,39 @@ if strcmp(data_type, 'simu_data_bias')
   plot(r_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   plot(r_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
 %   plot(r_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
-  legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
+  legend(method, 'Location', 'northeastOutside', 'FontSize', 26);
   grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
-  set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log');
-  ylabel("Rot. Error [deg]", 'FontSize', 20);
+  set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log', 'xticklabel', []);
+  ylabel("Rotation [deg]", 'FontSize', 25);
   
   subplot(412); hold on;
   plot(t_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   plot(t_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
 %   plot(t_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
-  legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
+  legend(method, 'Location', 'northeastOutside', 'FontSize', 26);
   grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
-  set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log');
-  ylabel("Trans. Error [m]", 'FontSize', 20);  
+  set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log', 'xticklabel', []);
+  ylabel("Translation [m]", 'FontSize', 25);  
   
   subplot(413); hold on;
   plot(mp_err_noise(1, :)+me_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   plot(mp_err_noise(2, :)+me_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
 %   plot(mp_err_noise(3, :)+me_err_noise(3, :), 'Color', color_list(3, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   % xlabel("Noise Level");  
-  legend(method, 'Location', 'northeastOutside', 'FontSize', 20);
+  legend(method, 'Location', 'northeastOutside', 'FontSize', 26);
   grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
-  set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log');
-  ylabel("MGE [m]", 'FontSize', 20);
+  set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log', 'xticklabel', []);
+  ylabel("MGE [m]", 'FontSize', 25);
   sgtitle(sprintf('Calibration Error On %s', label_title{1}), 'FontSize', 30, 'FontName', 'Times', 'FontWeight', 'normal');
   
   subplot(414); hold on;
   plot(n_err_noise(1, :), 'Color', color_list(1, :), 'LineStyle', '-', 'LineWidth', 2, 'Marker', 'd', 'MarkerSize', 10);
   plot(n_err_noise(2, :), 'Color', color_list(2, :), 'LineStyle', '--', 'LineWidth', 2, 'Marker', 'o', 'MarkerSize', 10);
-  legend({method{1}, method{2}}, 'Location', 'northeastOutside', 'FontSize', 20);
+  legend({method{1}, method{2}}, 'Location', 'northeastOutside', 'FontSize', 26);
   grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
-  set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2);
-  xlabel("Noise Level");  
-  ylabel("Normal Error [deg]", 'FontSize', 20);
+  set(gca, 'FontName', 'Times', 'FontSize', 28, 'LineWidth', 2);
+  xlabel("Noise Level", 'FontSize', 30);  
+  ylabel("Normal [deg]", 'FontSize', 25);
   % title(sprintf('Normal Vector Error On %s', label_title{1}), 'FontSize', 30, 'FontName', 'Times', 'FontWeight', 'normal');
 end
 end
@@ -176,12 +176,13 @@ if strcmp(data_type, 'real_data')
   grid on; ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3; box on;
   set(gca, 'FontName', 'Times', 'FontSize', 25, 'LineWidth', 2, 'YScale', 'log');
   ylabel("MGE [m]", 'FontSize', 20);
+  
   sgtitle(sprintf('Calibration Error On %s', label_title{2}), 'FontSize', 30, 'FontName', 'Times', 'FontWeight', 'normal');
 end
 end
 
 %%
-filename = fullfile('figure', 'tmech_version2', 'err_simu_data'); print(filename, '-depsc'); saveas(hf, strcat(filename, '.fig'));
+filename = fullfile('figure', 'tmech_version2', 'err_simu_data_2_methods'); print(filename, '-depsc'); saveas(hf, strcat(filename, '.fig'));
 
 %% Plot back-projection result
 for data_option = 8:9

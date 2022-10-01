@@ -2,7 +2,7 @@ function [] = add_path_qpep()
   warning('off');
   format long
 
-  libQPEP_dir = '../../LibQPEP/MATLAB';
+  libQPEP_dir = '../../libqpep/MATLAB';
   addpath(fullfile(libQPEP_dir, 'func_files'));
   addpath(fullfile(libQPEP_dir, 'solvers'));
   addpath(fullfile(libQPEP_dir, 'utils'));
