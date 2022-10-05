@@ -75,7 +75,7 @@ We provide the code of running the baseline method, which is based on the [MATLA
 ## Demo
 
 #### Calibration device
-<img src="/home/jjiao/matlab_ws/calibration/lcecalib/media/calibraton_device.png" style="zoom: 20%;" />
+<img src="media/calibraton_device.png" style="zoom: 20%;" />
 
 #### Reconstructed images from events
 
@@ -83,17 +83,17 @@ We provide the code of running the baseline method, which is based on the [MATLA
 
 #### Projecting LiDAR points onto images with the calibrated extrinsics
 
-<img src="/home/jjiao/matlab_ws/calibration/lcecalib/media/calibration_result_alignment.png" style="zoom: 33%;" />
+<img src="media/calibration_result_alignment.png" style="zoom: 33%;" />
 
-![](/home/jjiao/matlab_ws/calibration/lcecalib/media/calibration_result_rlfs.png)
+![](media/calibration_result_rlfs.png)
 
-<img src="/home/jjiao/matlab_ws/calibration/lcecalib/media/calibration_result_rles.png" style="zoom:50%;" />
+<img src="media/calibration_result_rles.png" style="zoom:50%;" />
 
 <center>VLP-16</center>
 
-<img src="/home/jjiao/matlab_ws/calibration/lcecalib/media/calibration_result_fp_data_1.png" style="zoom:130%;" />
+<img src="media/calibration_result_fp_data_1.png" style="zoom:130%;" />
 
-<img src="/home/jjiao/matlab_ws/calibration/lcecalib/media/calibration_result_fp_data_2.png" style="zoom:135%;" />
+<img src="media/calibration_result_fp_data_2.png" style="zoom:135%;" />
 
 <center>OS1-128</center>
 
