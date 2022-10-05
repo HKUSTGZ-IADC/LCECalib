@@ -74,16 +74,16 @@ We provide the code of running the baseline method, which is based on the [MATLA
 
 ## Demo
 
-#### Calibration device
+### Calibration device
 <img src="media/calibraton_device.png" width="700" />
 
-#### Reconstructed images from events
+### Reconstructed images from events
 <p float="left">
 	<img src="media/rles01-le.gif" width="250" />
 	<img src="media/rles02-le.gif" width="250" />
 	<img src="media/rles03-le.gif" width="250" />
 </p>
-#### Projecting LiDAR points onto images with the calibrated extrinsics
+### Projecting LiDAR points onto images with the calibrated extrinsics
 
 <p float="left">
 	<img src="media/calibration_result_rlfs.png" width="750" />
@@ -91,13 +91,13 @@ We provide the code of running the baseline method, which is based on the [MATLA
     <br>
 	<img src="media/calibration_result_rles.png" width="500" />
 	<img src="media/calibration_result_alignment.png" width="250" />
-	<center>VLP-16</center>
+	VLP-16
 </p>
 
 <p float="left">
 	<img src="media/calibration_result_fp_data_1.png" width="300" />
 	<img src="media/calibration_result_fp_data_2.png" width="300"/>
-	<h3>OS1-128</h3>
+	OS1-128
 <p>
 
 
