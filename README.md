@@ -18,10 +18,6 @@
   <h4 align="center">Under Review</h4>
   <div align="center"></div>
 
-
-
-[TOC]
-
 ## Installation
 
 First you have to install the MATLAB (our code has been tested with MATLAB R2019b, but the code of running the baseline method should be tested with >= MATLAB R2021b).
