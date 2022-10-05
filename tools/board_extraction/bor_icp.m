@@ -18,7 +18,7 @@ Tf0=eye(4);
 Tf0(1:3,1:3) = R_init;
 Tf0(1:3,4) = T_init;
 Kernel = 'L2';
-transform= f_irls_icp(pts_target,pts_source, Tf0, Kernel);
+transform= f_irls_icp(pts_target, pts_source, Tf0, Kernel);
 
 %% for a rectangle board, icp will converge to local solution, 
 % so we are about to generate some candidate soultions to re-estimate the transformation 

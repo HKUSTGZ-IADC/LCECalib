@@ -9,4 +9,5 @@ function [] = add_path_lcecalib()
   addpath('evaluation');
   addpath('tools');
   addpath('baseline');
+  addpath('noise_generator');
 end

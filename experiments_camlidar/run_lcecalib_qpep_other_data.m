@@ -42,7 +42,7 @@ for data_option = 1:1
   pcd_list = pcd_list(3:end);  
   pcd_raw_list = dir(fullfile(data_path, 'pcd'));
   pcd_raw_list = pcd_raw_list(3:end);
-  save('tmp_lcecalib_dataset.mat', ...
+  save('data_tmp/tmp_lcecalib_dataset.mat', ...
     'data_path', 'data_type', 'data_option', ...
     'img_list', 'pcd_list', 'pcd_raw_list', ...
     'borW', 'borH', 'numW', 'numH', 'pattern_size', ...
@@ -59,7 +59,7 @@ for data_option = 1:1
   start_frame = 15;
   end_frame = num_data;
   run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_frame); 
-  load('tmp_lcecalib_opt.mat');
+  load('data_tmp/tmp_lcecalib_opt.mat');
   
   %%
   T_lidar_cam = T_est_best^(-1);

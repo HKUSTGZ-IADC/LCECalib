@@ -1,38 +1,11 @@
-clc; clear; close all;
-
-add_path_lcecalib;
-add_path_qpep;
-
-format short
-
-% data_type = 'simu_data_bias';
-% data_type = 'simu_data';
-data_type = 'real_data';
-% data_type = 'fp_data';
-
 visualization_flag = 0;
 debug_flag = 0;
 save_result_flag = 1;
 plot_result_flag = 0;
 
-%% setting parameters for the ablation study
-flg_point_projection = 1;
-flg_outlier_rejection = 1;
-flg_use_iter_num = 10;
-flg_use_ptp = 1;
-flg_use_ptl = 1;
-% output result: result_lcecalib_qpep_sensor_data_\
-%                 (flg_point_projection)_\
-%                 (flg_outlier_rejection)_\
-%                 (flg_use_iter_num)_\
-%                 (flg_use_ptp)_\
-%                 (flg_use_ptl).mat
-save('tmp_lcecalib_ablation_study_setup.mat', ...
-  'flg_point_projection', 'flg_outlier_rejection', 'flg_use_iter_num', ...
-  'flg_use_ptp', 'flg_use_ptl');
-  
 %% load data and extract features
-for data_option = 1:1
+for data_option = 1:9
+  close all;
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   if (~exist(data_path)) 
@@ -58,7 +31,7 @@ for data_option = 1:1
   pcd_list = pcd_list(3:end);  
   pcd_raw_list = dir(fullfile(data_path, 'raw_pcd'));
   pcd_raw_list = pcd_raw_list(3:end);
-  save('tmp_lcecalib_dataset.mat', ...
+  save('data_tmp/tmp_lcecalib_dataset.mat', ...
     'data_path', 'data_type', 'data_option', ...
     'img_list', 'pcd_list', 'pcd_raw_list', ...
     'borW', 'borH', 'numW', 'numH', 'pattern_size', ...
@@ -75,15 +48,15 @@ for data_option = 1:1
   start_frame = 1;
   end_frame = num_data;
   run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_frame); 
-  load('tmp_lcecalib_opt.mat');
+  load('data_tmp/tmp_lcecalib_opt.mat');
   
-  %%
-% output result: result_lcecalib_qpep_sensor_data_\
-%                 (flg_point_projection)_\
-%                 (flg_outlier_rejection)_\
-%                 (flg_use_iter_num)_\
-%                 (flg_use_ptp)_\
-%                 (flg_use_ptl).mat  
+  %% Save calibration results
+  % output result: result_lcecalib_qpep_sensor_data_\
+  %                 (flg_point_projection)_\
+  %                 (flg_outlier_rejection)_\
+  %                 (flg_use_iter_num)_\
+  %                 (flg_use_ptp)_\
+  %                 (flg_use_ptl).mat  
   if save_result_flag
     resultname = sprintf('result_lcecalib_qpep_%d_%d_%d_%d_%d.mat', ...
       flg_point_projection, flg_outlier_rejection, flg_use_iter_num, ...
@@ -108,7 +81,7 @@ for data_option = 1:1
     resultname = sprintf('result_lcecalib_qpep_sensor_data_%d_%d_%d_%d_%d.mat', ...
       flg_point_projection, flg_outlier_rejection, flg_use_iter_num, ...
       flg_use_ptp, flg_use_ptl);
-    save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
+    save(fullfile(data_path, resultname), ...
       'data_type', 'data_option', ...  
       'all_t_err', 'all_r_err', 'all_mp_err', 'all_me_err', ...
       'select_t_err', 'select_r_err', 'select_mp_err', 'select_me_err', ...

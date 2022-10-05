@@ -38,6 +38,7 @@ function [Rest, test, covR, covt, mean_residual] = ...
 len = size(r0, 1);
 
 %%
+% TODO(jjiao): need to figure out why W0, Q0 are zero
 [W0, Q0, D, G, c, coef_f_q_sym, coef_J_pure, coefs_tq, pinvG] = ...
   pTop_WQDGc_new_weight(r0, b0, nvb, weights);
 t_funcs = {@t1_pTop_func_new, @t2_pTop_func_new, @t3_pTop_func_new};

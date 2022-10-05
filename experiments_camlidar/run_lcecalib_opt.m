@@ -1,15 +1,12 @@
 function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_frame)
-  load('tmp_lcecalib_fe.mat');
-  if (exist('tmp_lcecalib_ablation_study_setup.mat'))
-    load('tmp_lcecalib_ablation_study_setup.mat');
+  load('data_tmp/tmp_lcecalib_fe.mat');
+  if (exist('data_tmp/tmp_lcecalib_ablation_study_setup.mat'))
+    load('data_tmp/tmp_lcecalib_ablation_study_setup.mat');
     all_iterations = flg_use_iter_num;
     use_planar_flag = flg_use_ptp;
     use_edge_flag = flg_use_ptl;
   else
     flg_outlier_rejection = 1;
-%     flg_use_iter_num = 100;
-%     flg_use_ptp = 1;
-%     flg_use_ptl = 1;
   end
 
   %% 
@@ -33,6 +30,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   % Initialization
   T_ini_best = eye(4, 4);
   min_error = 1e5;
+  % r = 1 is more complete, but may cost lots of calibration time
   if strcmp(data_type, 'simu_data_bias')
     r = 1.0;
   elseif (strcmp(data_type, 'simu_data_bias') && (data_option > 3))
@@ -100,8 +98,8 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   end
   mp_err = sum(p_err(1, :)) / sum(p_err(2, :));  % mean planar error
   me_err = sum(p_err(3, :)) / sum(p_err(4, :));  % mean edge error      
-  sprintf('r_err: %f, t_err: %f, mp_err: %f, me_err: %f, total_err: %f of initial estimated TF', ...
-    r_err, t_err, mp_err, me_err, mp_err + me_err)  
+%   sprintf('r_err: %f, t_err: %f, mp_err: %f, me_err: %f, total_err: %f of initial estimated TF', ...
+%     r_err, t_err, mp_err, me_err, mp_err + me_err)  
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   %%
@@ -208,7 +206,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
         if (flg_outlier_rejection)
           stds_sort = sort(stds, 'ascend');
           std_threshold = stds_sort(floor(length(stds_sort) * 0.9));
-          weights(stds >= std_threshold) = 0;
+          weights(stds >= std_threshold & stds ~= 0) = 0;
         end
 
         % QPEP-PTop using both edge and planar constraints
@@ -328,9 +326,9 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
       min_error = mp_err + me_err;
       T_est_best = T_est;
     end
-    sprintf('r_err: %f, t_err: %f, mp_err: %f, me_err: %f, total_err: %f', ...
-      r_err, t_err, mp_err, me_err, mp_err + me_err)  
-    sprintf('Number of frames used for calibration: %d', frame_num) 
+%     sprintf('r_err: %f, t_err: %f, mp_err: %f, me_err: %f, total_err: %f', ...
+%       r_err, t_err, mp_err, me_err, mp_err + me_err)  
+%     sprintf('Number of frames used for calibration: %d', frame_num) 
     select_r_err(1, frame_num) = r_err;
     select_t_err(1, frame_num) = t_err;
     select_mp_err(1, frame_num) = mp_err;
@@ -355,7 +353,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   tmp_me_err = sum(tmp_p_err(3, :)) / sum(tmp_p_err(4, :));  % mean planar error  
   sprintf('r_err: %f, t_err: %f, mp_err: %f, me_err: %f, total_err: %f of final estimated TF', ...
     r_err, t_err, tmp_mp_err, tmp_me_err, tmp_mp_err + tmp_me_err)  
-  save('tmp_lcecalib_opt.mat');
+  save('data_tmp/tmp_lcecalib_opt.mat');
 end
 
 

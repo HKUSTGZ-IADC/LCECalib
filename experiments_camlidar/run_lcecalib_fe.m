@@ -1,7 +1,7 @@
 function run_lcecalib_fe()
-  load('tmp_lcecalib_dataset.mat');
-  if (exist('tmp_lcecalib_ablation_study_setup.mat'))
-    load('tmp_lcecalib_ablation_study_setup.mat');
+  load('data_tmp/tmp_lcecalib_dataset.mat');
+  if (exist('data_tmp/tmp_lcecalib_ablation_study_setup.mat'))
+    load('data_tmp/tmp_lcecalib_ablation_study_setup.mat');
   else
     flg_point_projection = 1;
   end
@@ -147,12 +147,12 @@ function run_lcecalib_fe()
       continue;
     end
     
+    % NOTE: 
     % data in simu_data_bias may contains extremely large noise
     % the ransac for plane extraction may modify the parameter
     if (strcmp(data_type, 'simu_data_bias') && (data_option > 5))  % noise-0.048 and above
       [lidar_board_plane_coeff, inlierIdx] = plane_ransac(lidar_board_pts(1:3, :), 0.05);
       lidar_board_pts = lidar_board_pts(:, inlierIdx);
-
       % project board pts onto the fitted plane
       if (flg_point_projection)
         n = lidar_board_plane_coeff(1:3);
@@ -166,15 +166,13 @@ function run_lcecalib_fe()
           lidar_board_pts(1:3, ptid) = pt_onboard;
         end  
       end
-      
       % extract edge points    
       lidar_board_edge_pts_idx = find_pts_ring_edges(lidar_board_pts);
       lidar_board_edge_pts = lidar_board_pts(:, lidar_board_edge_pts_idx);
     else
       % extract edge points    
       lidar_board_edge_pts_idx = find_pts_ring_edges(lidar_board_pts);
-      lidar_board_edge_pts = lidar_board_pts(:, lidar_board_edge_pts_idx);  
-      
+      lidar_board_edge_pts = lidar_board_pts(:, lidar_board_edge_pts_idx);       
       % project board pts onto the fitted plane 
       if (flg_point_projection)
         n = lidar_board_plane_coeff(1:3);
@@ -225,7 +223,7 @@ function run_lcecalib_fe()
     all_lidar_pc_array{end + 1} = lidar_pc_array;   
     all_lidar_pc_array_raw{end + 1} = lidar_pc_array_raw;
   end  
-  sprintf('ratio: %d: %f (%d, %d)', data_option, length(all_lidar_board_plane_coeff)/min(length(pcd_list), min(num_data, 60)), ...
-    length(all_lidar_board_plane_coeff), min(length(pcd_list), min(num_data, 60)))
-  save('tmp_lcecalib_fe.mat');
+%   sprintf('ratio: %d: %f (%d, %d)', data_option, length(all_lidar_board_plane_coeff)/min(length(pcd_list), min(num_data, 60)), ...
+%     length(all_lidar_board_plane_coeff), min(length(pcd_list), min(num_data, 60)))
+  save('data_tmp/tmp_lcecalib_fe.mat');
 end
