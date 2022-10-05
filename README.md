@@ -7,7 +7,7 @@
     ·
     <a><strong>Feiyi Chen*</strong></a>
     ·
-    <a><strong>Hexiang Wei*</strong></a>
+    <a><strong>Hexiang Wei</strong></a>
     ·
     <a href="https://zarathustr.github.io/"><strong>Jin Wu</strong></a>
     ·
