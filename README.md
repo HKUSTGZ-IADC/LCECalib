@@ -83,22 +83,22 @@ We provide the code of running the baseline method, which is based on the [MATLA
 	<img src="media/rles02-le.gif" width="250" />
 	<img src="media/rles03-le.gif" width="250" />
 </p>
-### Projecting LiDAR points onto images with the calibrated extrinsics
 
+### Projecting points onto images with calibrated extrinsics
 <p float="left">
 	<img src="media/calibration_result_rlfs.png" width="750" />
     <br>
     <br>
 	<img src="media/calibration_result_rles.png" width="500" />
 	<img src="media/calibration_result_alignment.png" width="250" />
-	VLP-16
+	<center>VLP-16</center>
 </p>
 
 <p float="left">
 	<img src="media/calibration_result_fp_data_1.png" width="300" />
 	<img src="media/calibration_result_fp_data_2.png" width="300"/>
-	OS1-128
-<p>
+	<center>OS1-128</center>
+</p>
 
 
 ## Acknowledgement
