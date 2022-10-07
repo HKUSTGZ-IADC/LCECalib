@@ -75,8 +75,6 @@ We provide the code of running the baseline method, which is based on the [MATLA
 <img src="media/calibraton_device.png" width="700" />
 
 ### Reconstructed images from events
-<<<<<<< HEAD
-
 <p align="center">
 	<img src="media/rles01-events.gif" width="250" />
 	<img src="media/rles02-events.gif" width="250" />
@@ -104,8 +102,6 @@ We provide the code of running the baseline method, which is based on the [MATLA
 	<img src="media/calibration_result_fp_data_2.png" width="300"/>
     <center><font size="5">Camera-Ouster128 Calibration</font></center>
 </p>
-
-
 
 ## Acknowledgement
 The authors would like to thank members in HKUST Robotics Institute and Shenzhen Unity-Drive innoviation for the help and suggestions in algorithm development.
