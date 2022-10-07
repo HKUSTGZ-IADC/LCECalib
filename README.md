@@ -75,34 +75,42 @@ We provide the code of running the baseline method, which is based on the [MATLA
 <img src="media/calibraton_device.png" width="700" />
 
 ### Reconstructed images from events
-<p float="left">
+
+<p align="center">
+	<img src="media/rles01-events.gif" width="250" />
+	<img src="media/rles02-events.gif" width="250" />
+	<img src="media/rles03-events.gif" width="250" />
+    <center><font size="5">Pure Events</font></center>
+</p>
+<p align="center">
 	<img src="media/rles01-le.gif" width="250" />
 	<img src="media/rles02-le.gif" width="250" />
 	<img src="media/rles03-le.gif" width="250" />
+	<center><font size="5">Reconstructed Images</font></center>
 </p>
 
 ### Projecting points onto images with calibrated extrinsics
-<p float="left">
+<p align="center">
 	<img src="media/calibration_result_rlfs.png" width="750" />
-    <br>
     <br>
 	<img src="media/calibration_result_rles.png" width="500" />
 	<img src="media/calibration_result_alignment.png" width="250" />
-	<center>VLP-16</center>
+	<center><font size="5">Camera-VLP16 Calibration</font></font></center>
 </p>
 
-<p float="left">
+<p align="center">
 	<img src="media/calibration_result_fp_data_1.png" width="300" />
 	<img src="media/calibration_result_fp_data_2.png" width="300"/>
-	<center>OS1-128</center>
+    <center><font size="5">Camera-Ouster128 Calibration</font></center>
 </p>
+
 
 
 ## Acknowledgement
-
 The authors would like to thank members in HKUST Robotics Institute and Shenzhen Unity-Drive innoviation for the help and suggestions in algorithm development.
 
 ## Citation
 If you find our code or paper useful, please cite
+
 ## Contact
 Contact [Jianhao Jiao](mailto:jiaojh1994@gmail.com) for questions, comments and reporting bugs.
