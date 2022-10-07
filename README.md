@@ -75,6 +75,7 @@ We provide the code of running the baseline method, which is based on the [MATLA
 <img src="media/calibraton_device.png" width="700" />
 
 ### Reconstructed images from events
+<<<<<<< HEAD
 
 <p align="center">
 	<img src="media/rles01-events.gif" width="250" />
