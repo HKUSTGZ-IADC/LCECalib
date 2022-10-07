@@ -72,7 +72,9 @@ We provide the code of running the baseline method, which is based on the [MATLA
 ## Demo
 
 ### Calibration device
-<img src="media/calibraton_device.png" width="700" />
+<p align="center">
+	<img src="media/calibraton_device.png" width="750" />
+</p>
 
 ### Reconstructed images from events
 <p align="center">
@@ -96,12 +98,12 @@ We provide the code of running the baseline method, which is based on the [MATLA
 	<img src="media/calibration_result_alignment.png" width="250" />
 	<center><font size="5">Camera-VLP16 Calibration</font></font></center>
 </p>
-
 <p align="center">
-	<img src="media/calibration_result_fp_data_1.png" width="300" />
-	<img src="media/calibration_result_fp_data_2.png" width="300"/>
+	<img src="media/calibration_result_fp_data_1.png" width="350" />
+	<img src="media/calibration_result_fp_data_2.png" width="350"/>
     <center><font size="5">Camera-Ouster128 Calibration</font></center>
 </p>
+
 
 ## Acknowledgement
 The authors would like to thank members in HKUST Robotics Institute and Shenzhen Unity-Drive innoviation for the help and suggestions in algorithm development.
