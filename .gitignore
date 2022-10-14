@@ -2,3 +2,4 @@ experiments_camlidar/data/*
 experiments_camlidar/figure/*
 *.mat
 *.m~
+camlidar_calibration/data/*
