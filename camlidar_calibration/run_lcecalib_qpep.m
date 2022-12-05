@@ -2,6 +2,7 @@ clc; clear; close all;
 
 add_path_lcecalib;
 add_path_qpep;
+load('color_list.mat');
 
 format short
 
@@ -65,6 +66,7 @@ for data_option = 1:3
   if save_result_flag
     save(fullfile(data_path, 'result_lcecalib_qpep.mat'), ...
       'data_type', 'data_option', ...
+      'params', ...
       'all_t_err', 'all_r_err', 'all_mp_err', 'all_me_err', ...
       'select_t_err', 'select_r_err', 'select_mp_err', 'select_me_err', ...
       'all_eulerx', 'all_eulery', 'all_eulerz', ...
@@ -83,6 +85,7 @@ for data_option = 1:3
     save(fullfile(data_path, 'result_lcecalib_qpep_sensor_data.mat'), ...
       'data_type', 'data_option', ...  
       'all_t_err', 'all_r_err', 'all_mp_err', 'all_me_err', ...
+      'params', ...
       'select_t_err', 'select_r_err', 'select_mp_err', 'select_me_err', ...
       'all_eulerx', 'all_eulery', 'all_eulerz', ...
       'all_tx', 'all_ty', 'all_tz', ...
@@ -105,37 +108,70 @@ for data_option = 1:3
   plot_result_flag = 1; 
   reidx = randperm(length(all_cam_board_plane_coeff));
   idx = reidx(1);
+  start_frame = 1;
+ 
+  %
   if plot_result_flag
     figure; 
-    subplot(311); plot(all_r_err(start_frame:end), 'r-o', ...
-      'MarkerSize', 15, 'LineWidth', 3);
+    subplot(311); h = boxplot(all_r_err(:, start_frame:end), 'colors', color_list(1, 1:3));
+    set(h, 'LineWidth', 2);
     ylabel("Rotation Error [deg]");
     grid on;
     ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3;
     set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
     box on;
     
-    subplot(312); plot(all_t_err(start_frame:end), 'r-o', ...
-      'MarkerSize', 15, 'LineWidth', 3);
-%     xlabel("Number of Poses"); 
+    subplot(312); h = boxplot(all_t_err(:, start_frame:end), 'colors', color_list(2, 1:3));
+    set(h, 'LineWidth', 2);
     ylabel("Translation Error [m]");
     grid on;
     ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3;    
     set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
     box on;
     
-    subplot(313); plot(all_mp_err(start_frame:end), 'b-d', ...
-      'MarkerSize', 15, 'LineWidth', 3);
-    xlabel("Number of Poses"); ylabel("Planar Error [m]");
+    subplot(313); h = boxplot(all_mp_err(:, start_frame:end), 'colors', color_list(3, 1:3));
+    set(h, 'LineWidth', 2);
+    xlabel("Number of Frames in Calibration"); ylabel("Planar Error [m]");
     grid on;
     ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3;
     set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
     box on;    
 
-    sgtitle('Mean Rotation, Translation, and Planar Error', 'FontSize', 30, ...
+    sgtitle('Rotation, Translation, and Planar Error', 'FontSize', 30, ...
       'FontName', 'Times', 'FontWeight', 'normal');
+  end  
+  
+  if plot_result_flag
+    figure; 
+    subplot(311); h = plot(all_r_err(:, end), 'Color', color_list(1, 1:3));
+    set(h, 'LineWidth', 2);
+    ylabel("Rotation Error [deg]");
+    grid on;
+    ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3;
+    set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
+    box on;
+    
+    subplot(312); h = plot(all_t_err(:, end), 'Color', color_list(2, 1:3));
+    set(h, 'LineWidth', 2);
+    ylabel("Translation Error [m]");
+    grid on;
+    ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3;    
+    set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
+    box on;
+    
+    subplot(313); h = plot(all_mp_err(:, end), 'Color', color_list(3, 1:3));
+    set(h, 'LineWidth', 2);
+    xlabel("Number of Computations"); ylabel("Planar Error [m]");
+    grid on;
+    ax = gca; ax.GridLineStyle = '--'; ax.GridAlpha = 0.3;
+    set(gca, 'FontName', 'Times', 'FontSize', 20, 'LineWidth', 1.5, 'YScale', 'log');
+    box on;    
+
+    sgtitle('Rotation, Translation, and Planar Error', 'FontSize', 30, ...
+      'FontName', 'Times', 'FontWeight', 'normal');    
   end
   
+  %
   if plot_result_flag
     figure;
     subplot(121);

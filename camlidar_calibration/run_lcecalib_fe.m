@@ -31,7 +31,13 @@ function run_lcecalib_fe()
       end
       if (~exist(img_file))
         continue;
-      end     
+      end
+      img_raw = imread(img_file);
+      pc = pcread(pcd_file);
+      pc = removeInvalidPoints(pc);
+      pc = pcdownsample(pc, 'random', 0.5);
+      pc_raw = pcread(pcd_raw_file);
+      pc_raw = removeInvalidPoints(pc);     
     else
       if ~(contains(img_list(idx).name, '.png') ...
         || contains(img_list(idx).name, '.jpg'))
@@ -40,14 +46,13 @@ function run_lcecalib_fe()
       img_file = strcat(img_list(idx).folder, '/', img_list(idx).name);
       pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
       pcd_raw_file = strcat(pcd_raw_list(idx).folder, '/', pcd_raw_list(idx).name);
-    end
-      
-    img_raw = imread(img_file);
-    pc = pcread(pcd_file);
-    pc = removeInvalidPoints(pc);
-    pc = pcdownsample(pc, 'random', 0.5);
-    pc_raw = pcread(pcd_raw_file);
-    pc_raw = removeInvalidPoints(pc);
+      img_raw = imread(img_file);
+      pc = pcread(pcd_file);
+      pc = removeInvalidPoints(pc);
+      pc = pcdownsample(pc, 'random', 0.5);     
+      pc_raw = pcread(pcd_raw_file);
+      pc_raw = removeInvalidPoints(pc);      
+    end    
 
     %% image: feature extraction
     [img_undist, camParams] = undistort_image(img_raw, K, D);
@@ -134,7 +139,16 @@ function run_lcecalib_fe()
       
       lidar_pc_array_raw = reshape(pc_raw.Location(), [], 3)';
       lidar_pc_array_raw = [lidar_pc_array_raw; pc_raw.Intensity'];
-    else      
+    elseif contains(data_type, 'mini_hercules')
+      roi = computeLiDARROI(cam_board_corners, 1.0);
+      indices = findPointsInROI(pc, roi);
+      pc_roi = select(pc, indices);
+      lidar_pc_array = reshape(pc_roi.Location(), [], 3)';
+      lidar_pc_array = [lidar_pc_array; pc_roi.Intensity'];
+      
+      lidar_pc_array_raw = reshape(pc_raw.Location(), [], 3)';
+      lidar_pc_array_raw = [lidar_pc_array_raw; pc_raw.Intensity'];
+    else
       lidar_pc_array = reshape(pc.Location(), [], 3)';
       lidar_pc_array_raw = reshape(pc_raw.Location(), [], 3)';
     end

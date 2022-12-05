@@ -377,7 +377,3 @@ save('data/fp_data/fp_data_4/img/params.mat', 'K', 'D', 'borH', 'borW', ...
   'edge_weight', 'planar_weight');
 
 %%
-
-
-
-

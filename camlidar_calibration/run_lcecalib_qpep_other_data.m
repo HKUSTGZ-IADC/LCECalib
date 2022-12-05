@@ -7,8 +7,9 @@ format short
 
 % data_type = 'apollo_data';
 % data_type = 'fp_data_20220424';
-data_type = 'fp_data_20220626';
+% data_type = 'fp_data_20220626';
 % data_type = 'dog_data_20220629';
+data_type = 'mini_hercules_data_20221205';
 
 visualization_flag = 0;
 debug_flag = 0;
@@ -54,9 +55,9 @@ for data_option = 1:1
   run_lcecalib_fe();
   
   %% QPEP-pTop based extrinsic calibration
-  all_iterations = 100;
+  all_iterations = 10;
   edge_iterations = 3;
-  start_frame = 15;
+  start_frame = 5;
   end_frame = num_data;
   run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_frame); 
   load('data_tmp/tmp_lcecalib_opt.mat');
@@ -164,7 +165,7 @@ for data_option = 1:1
   reidx = randperm(length(all_cam_board_plane_coeff));
   if plot_result_flag
     figure; hold on;
-    for idx = 1:10
+    for idx = 1:length(all_cam_board_plane_coeff)
       lbpts = all_lidar_board_pts{idx};
       lepts = all_lidar_board_edge_pts{idx};
       cbcorner = all_cam_board_corners{idx};
