@@ -1,5 +1,6 @@
-experiments_camlidar/data/*
-experiments_camlidar/figure/*
+camlidar_calibration/data/*
+camlidar_calibration/figure/*
+camlidar_calibration/data_bag_process/*
 *.mat
 *.m~
 camlidar_calibration/data

@@ -28,7 +28,7 @@ First you have to install the MATLAB (our code has been tested with MATLAB R2019
 git clone https://github.com/HKUSTGZ-IADC/LibQPEP-LCECalib
 ```
 
-2. (Optional) You need to download the preliminary E2VID for image reconstruction from events if needed. I recommend you to use the code in docker. 
+2. You need to download the preliminary E2VID for image reconstruction from events if needed. 
 ```
 git clone https://github.com/HKUSTGZ-IADC/E2Calib-LCECalib
 ```
@@ -36,6 +36,12 @@ git clone https://github.com/HKUSTGZ-IADC/E2Calib-LCECalib
 3. Download the repository of LCECalib
 ```
 git clone https://github.com/HKUSTGZ-IADC/LCECalib
+```
+
+4. (Optional) I recommend you to use the code in docker. 
+```
+docker pull iidcramlab/e2vid:cuda10.1-conda-py3
+nvidia-docker run -v <your_path>:<docker_path> --it --name e2vid iidcramlab/e2vid:cuda10.1-conda-py3 /bin/bash
 ```
 
 ## Dataset Preparation
