@@ -54,6 +54,10 @@ We provide data used in our paper here: http://gofile.me/72EEc/OK6HMnQeH. Please
   * real_data_1 - real_data_3: *RLFS01* - *RLFS03*
   * real_data_4 - real_data_9: *RLES01-LF*, *RLES01-LE*, *RLES02-LF*, *RLES02-LE*, *RLES03-LF*, *RLES03-LE*
 
+You can collect data by yourself for practical sensors, two tricks are provided:
+* The checkboard should be far away from its holder (like the human) to make the plane fitting clear
+* The checkboard should be placed as shown in the paper for the successful boundary detection
+
 ## Run
 
 ### Calibration on data presented in our paper
