@@ -1,0 +1,72 @@
+dataset_name: calib_20220209
+lidar_name: OS1-128
+
+# extrinsics from the sensor (reference) to osimu (target)
+quaternion_sensor_osimu00: !!opencv-matrix
+  rows: 1
+  cols: 4
+  dt: f
+  data: [1.0, 0.0, 0.0, 0.0] # (qw, qx, qy, qz)
+translation_sensor_osimu00: !!opencv-matrix
+  rows: 1
+  cols: 3
+  dt: f
+  data: [0.006253, -0.011775, 0.007645]  # rosrun tf tf_echo os_sensor os_imu
+timeshift_sensor_osimu00: 0.0
+
+# extrinsics from the sensor (reference) to frame_cam00 (target)
+# calibration approach: LCE-calib
+quaternion_sensor_frame_cam00: !!opencv-matrix
+  rows: 1
+  cols: 4
+  dt: f
+  data: [0.5054, -0.4888, 0.5074, -0.4982]
+translation_sensor_frame_cam00: !!opencv-matrix
+  rows: 1
+  cols: 3
+  dt: f
+  data: [0.0419, 0.0739, -0.0399]
+timeshift_sensor_frame_cam00: 0.0  # unknown
+
+# extrinsics from the sensor (reference) to event_cam00 (target)
+# calibration approach: LCE-calib
+quaternion_sensor_event_cam00: !!opencv-matrix
+  rows: 1
+  cols: 4
+  dt: f
+  data: [0.512558, -0.495432, 0.498060, -0.493728]
+translation_sensor_event_cam00: !!opencv-matrix
+  rows: 1
+  cols: 3
+  dt: f
+  data: [0.062104, 0.116337, -0.033758]
+timeshift_sensor_event_cam00: 0.0  # unknown
+
+# extrinsics from the sensor (reference) to bodyimu (target)
+# option 1: T_sensor_bodyimu = T_sensor_frame_cam00 * T_frame_cam00_bodyimu
+quaternion_sensor_bodyimu: !!opencv-matrix
+  rows: 1
+  cols: 4
+  dt: f
+  data: [0.999982,  0.004028, -0.002505,  0.003725]
+translation_sensor_bodyimu: !!opencv-matrix
+  rows: 1
+  cols: 3
+  dt: f
+  data: [-0.037354,  0.006824, -0.020190]
+timeshift_sensor_bodyimu: -0.1370923312060841  # from multi-imu calibration
+
+#################################################
+# option 2: T_sensor_bodyimu = T_sensor_osimu00 * T_osimu00_bodyimu
+# calibration approach: kalibr-imu
+# quaternion_sensor_bodyimu: !!opencv-matrix
+#   rows: 1
+#   cols: 4
+#   dt: f
+#   data: [1.0000, -0.0022, -0.0016, -0.0023]
+# translation_sensor_bodyimu: !!opencv-matrix
+#   rows: 1
+# 	cols: 3
+# 	dt: f
+# 	data: [-0.0040, 0.0014, -0.0253]
+# timeshift_sensor_bodyimu: 0.0  # unknown

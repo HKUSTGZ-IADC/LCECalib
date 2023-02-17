@@ -1,0 +1,55 @@
+dataset_name: calib_20220209
+image_width: 1024
+image_height: 768
+camera_name: stereo_left_Flir_BFSU3
+camera_matrix: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: f
+  data: [ 6.05128601e+02, 0., 5.20453430e+02, 
+          0., 6.04974060e+02, 3.93878479e+02, 
+          0., 0., 1. ]
+distortion_model: plumb_bob
+distortion_coefficients: !!opencv-matrix
+  rows: 1
+  cols: 4
+  dt: f
+  data: [ -9.19851288e-02, 8.66983905e-02, 2.48622790e-04, 7.21565739e-04 ]
+rectification_matrix: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: f
+  data: [ 9.99833524e-01, -1.62732340e-02, 8.25512875e-03,
+          1.63186900e-02, 9.99851882e-01, -5.46946190e-03, 
+          -8.16490036e-03, 5.60326409e-03, 9.99950945e-01 ]
+projection_matrix: !!opencv-matrix
+  rows: 3
+  cols: 4
+  dt: f
+  data: [ 6.04799866e+02, 0., 5.14155396e+02, 0., 
+          0., 6.04799866e+02, 3.91754669e+02, 0., 
+          0., 0., 1., 0. ]
+          
+quaternion_stereo: !!opencv-matrix
+  rows: 1
+  cols: 4
+  dt: f
+  data: [ 1., 0., 0., 0. ] # qw, qx, qy, qz
+translation_stereo: !!opencv-matrix
+  rows: 1
+  cols: 3
+  dt: f
+  data: [ 0., 0., 0. ]
+
+# extrinsics from the sensor (reference) to bodyimu (target)
+quaternion_sensor_bodyimu: !!opencv-matrix
+  rows: 1
+  cols: 4
+  dt: f
+  data: [0.500292, 0.490181, -0.508467, 0.500889]
+translation_sensor_bodyimu: !!opencv-matrix
+  rows: 1
+  cols: 3
+  dt: f
+  data: [0.067436, -0.022029, -0.078333]
+timeshift_sensor_bodyimu: 0.11942262945471108

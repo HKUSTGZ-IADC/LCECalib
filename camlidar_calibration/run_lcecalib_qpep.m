@@ -171,7 +171,7 @@ for data_option = 1:3
       'FontName', 'Times', 'FontWeight', 'normal');    
   end
   
-  %
+  %%%%% camera-lidar projection
   if plot_result_flag
     figure;
     subplot(121);
@@ -182,6 +182,8 @@ for data_option = 1:3
     imshow(projectPointOnImage(TGt, K, ...
       all_lidar_pc_array_raw{idx}, all_img_undist{idx}));
     title('Projected points with TGt', 'FontSize', 25);
+    
+    %%%%% lidar point cloud colorization
 %     cloud_rgb = colorizePointFromImage(T_est_best, K, ...
 %       all_lidar_pc_array_raw{reidx(1)}, all_img_undist{reidx(1)});    
 %     pcwrite(cloud_rgb, '/tmp/cloud_rgb.pcd');
