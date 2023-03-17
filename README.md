@@ -114,9 +114,11 @@ We provide the code of running the baseline method, which is based on the [MATLA
     <center><font size="5">Camera-Ouster128 Calibration</font></center>
 </p>
 
-
+<!--
 ## Acknowledgement
-The authors would like to thank members in HKUST Robotics Institute and Shenzhen Unity-Drive innoviation for the help and suggestions in algorithm development.
+The authors express their sincere gratitude to Prof. Lujia Wang and Mr. Shuyang Zhang for their insightful comments on this article. They also wish to extend their heartfelt appreciation to the editorial team of Transactions on Mechatronics and
+all the reviewers for their prompt and constructive feedback, which significantly enhanced this article.
+-->
 
 ## Citation
 If you find our code or paper useful, please cite
