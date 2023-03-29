@@ -3,9 +3,9 @@
 <p align="center">
   <h2 align="center">LCE-Calib: Automatic LiDAR-Frame/Event Camera Extrinsic Calibration With A Globally Optimal Solution</h2>
   <p align="center">
-    <a href="https://https://gogojjh.github.io"><strong>Jianhao Jiao*</strong></a>
+    <a href="https://https://gogojjh.github.io"><strong>Jianhao Jiao</strong></a>
     ·
-    <a><strong>Feiyi Chen*</strong></a>
+    <a><strong>Feiyi Chen</strong></a>
     ·
     <a><strong>Hexiang Wei</strong></a>
     ·
@@ -13,29 +13,30 @@
     ·
     <a href="https://facultyprofiles.hkust.edu.hk/profiles.php?profile=ming-liu-eelium"><strong>Ming Liu</strong></a>
     · 
-    <a><strong>(* Equal Contribution)</strong></a>  
   </p>
-  <h4 align="center">Under Review</h4>
+  <h5 align="center">Accepted to IEEE/ASME Transactions on Mechatronics</h5>
   <div align="center"></div>
+
 
 ## Installation
 
 First you have to install the MATLAB (our code has been tested with MATLAB R2019b, but the code of running the baseline method should be tested with >= MATLAB R2021b).
 
-1. You need to download the preliminary QPEP (LCECalib wrapper)
+1. You need to download the preliminary QPEP solver (LCECalib wrapper)
 
 ```
 git clone https://github.com/HKUSTGZ-IADC/LibQPEP-LCECalib
 ```
 
-2. You need to download the preliminary E2VID for image reconstruction from events if needed. 
-```
-git clone https://github.com/HKUSTGZ-IADC/E2Calib-LCECalib
-```
-
-3. Download the repository of LCECalib
+2. Download the repository of LCECalib
 ```
 git clone https://github.com/HKUSTGZ-IADC/LCECalib
+```
+
+3. (Optional) You need to download the preliminary E2VID for image reconstruction from events if needed. 
+
+```
+git clone https://github.com/HKUSTGZ-IADC/E2Calib-LCECalib
 ```
 
 4. (Optional) I recommend you to use the code in docker. 
@@ -113,15 +114,22 @@ We provide the code of running the baseline method, which is based on the [MATLA
 	<img src="media/calibration_result_fp_data_2.png" width="350"/>
     <center><font size="5">Camera-Ouster128 Calibration</font></center>
 </p>
-
-<!--
 ## Acknowledgement
-The authors express their sincere gratitude to Prof. Lujia Wang and Mr. Shuyang Zhang for their insightful comments on this article. They also wish to extend their heartfelt appreciation to the editorial team of Transactions on Mechatronics and
-all the reviewers for their prompt and constructive feedback, which significantly enhanced this article.
--->
+The authors express their sincere gratitude to Prof. Lujia Wang and Mr. Shuyang Zhang for their insightful comments on this article. 
 
 ## Citation
 If you find our code or paper useful, please cite
 
+```
+@article{jiao2023lce,
+  title={LCE-Calib: Automatic LiDAR-Frame/Event Camera Extrinsic Calibration With A Globally Optimal Solution},
+  author={Jiao, Jianhao and Chen, Feiyi and Wei, Hexiang and Wu, Jin and Liu, Ming},
+  journal={arXiv preprint arXiv:2303.09825},
+  year={2023}
+}
+```
+
 ## Contact
 Contact [Jianhao Jiao](mailto:jiaojh1994@gmail.com) for questions, comments and reporting bugs.
+
+Contact [Mr.Jin Wu](mailto:jwucp at connect.ust.hk) or [Prof.Ming Liu](mailto:eelium at ust.hk) for any commercial inquiries.
