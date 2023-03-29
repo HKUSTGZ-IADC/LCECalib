@@ -9,7 +9,9 @@ format short
 % data_type = 'fp_data_20220424';
 % data_type = 'fp_data_20220626';
 % data_type = 'dog_data_20220629';
-data_type = 'mini_hercules_data_20221205';
+% data_type = 'mini_hercules_data_20221205';
+% data_type = 'hkustgz_data_handheld_20230309';
+data_type = 'hkustgz_data_handheld_20230323';
 
 visualization_flag = 0;
 debug_flag = 0;
@@ -17,7 +19,7 @@ save_result_flag = 1;
 plot_result_flag = 0;
 
 %% load data and extract features
-for data_option = 1:1
+for data_option = 1:2
   sprintf('data_option: %d', data_option)
   data_path = fullfile('data', data_type, strcat(data_type, '_', num2str(data_option)));
   if (~exist(data_path)) 
@@ -57,7 +59,7 @@ for data_option = 1:1
   %% QPEP-pTop based extrinsic calibration
   all_iterations = 10;
   edge_iterations = 3;
-  start_frame = 5;
+  start_frame = 22;
   end_frame = num_data;
   run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_frame); 
   load('data_tmp/tmp_lcecalib_opt.mat');

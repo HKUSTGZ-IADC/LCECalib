@@ -16,7 +16,7 @@ function run_lcecalib_fe()
   all_img_undist = {}; 
   all_lidar_pc_array = {}; all_lidar_pc_array_raw = {};
   for idx = 1:min(length(pcd_list), min(num_data, 60))
-    if contains(data_type, 'fp_data')
+    if (contains(data_type, 'fp_data') || contains(data_type, 'hkustgz_data_handheld'))
       pcd_file = strcat(pcd_list(idx).folder, '/', pcd_list(idx).name);
       if (~exist(pcd_file)) 
         continue;
@@ -35,7 +35,7 @@ function run_lcecalib_fe()
       img_raw = imread(img_file);
       pc = pcread(pcd_file);
       pc = removeInvalidPoints(pc);
-      pc = pcdownsample(pc, 'random', 0.5);
+      pc = pcdownsample(pc, 'random', 0.8);
       pc_raw = pcread(pcd_raw_file);
       pc_raw = removeInvalidPoints(pc);     
     else
@@ -56,9 +56,24 @@ function run_lcecalib_fe()
 
     %% image: feature extraction
     [img_undist, camParams] = undistort_image(img_raw, K, D);
+    if (contains(data_type, 'hkustgz_data_handheld_20230323'))
+      img_undist(1:500, :, :) = 0;
+    end
     [imagePoints, boardSize] = detectCheckerboardPoints(img_undist);
+    
+    debug_flag = 0;
+    if debug_flag
+      J = insertText(img_undist, imagePoints, 1:size(imagePoints, 1));
+      J = insertMarker(J, imagePoints, 'o', 'Color', 'red', 'Size', 5);
+      fig = figure; 
+      imshow(J);
+      title(sprintf('Detected a %d x %d Checkerboard', boardSize));    
+    end
+    debug_flag = 0;
+    
     if (boardSize(1) == 0 || boardSize(2) == 0 || ...
         boardSize(1) ~= numH || boardSize(2) ~= numW)
+      disp('wrong checkboard detection');
       continue;
     end
     worldPoints = generateCheckerboardPoints(boardSize, pattern_size);
@@ -79,7 +94,7 @@ function run_lcecalib_fe()
     end
     T_qpep_pnp = T_cam_world;
     if debug_flag
-      disp('T_qpep_pnp')
+      disp('T_qpep_pnp');
       disp(num2str(T_qpep_pnp, '%5f '))
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,7 +132,7 @@ function run_lcecalib_fe()
       plot(pc_corner_px(1,:), pc_corner_px(2,:), '-ob');
       hold off;
       sgtitle('Projected 3D corners and patterns');
-      close(fig);
+%       close(fig);
     end
     debug_flag = 0;
 
@@ -141,6 +156,24 @@ function run_lcecalib_fe()
       lidar_pc_array_raw = [lidar_pc_array_raw; pc_raw.Intensity'];
     elseif contains(data_type, 'mini_hercules')
       roi = computeLiDARROI(cam_board_corners, 1.0);
+      indices = findPointsInROI(pc, roi);
+      pc_roi = select(pc, indices);
+      lidar_pc_array = reshape(pc_roi.Location(), [], 3)';
+      lidar_pc_array = [lidar_pc_array; pc_roi.Intensity'];
+      
+      lidar_pc_array_raw = reshape(pc_raw.Location(), [], 3)';
+      lidar_pc_array_raw = [lidar_pc_array_raw; pc_raw.Intensity'];
+    elseif contains(data_type, 'hkustgz_data_handheld')
+      if (data_option == 1)
+        % frame_cam00
+        R_ini = eye(3); 
+      else
+        % frame_cam01
+        R_ini = [0.0000         0    1.0000;
+                 0    1.0000         0;
+                -1.0000         0    0.0000 ];
+      end
+      roi = computeLiDARROI(R_ini * cam_board_corners, 1.0);
       indices = findPointsInROI(pc, roi);
       pc_roi = select(pc, indices);
       lidar_pc_array = reshape(pc_roi.Location(), [], 3)';
@@ -215,10 +248,11 @@ function run_lcecalib_fe()
       plot3(lidar_board_pts_raw(1, :), lidar_board_pts_raw(2, :), lidar_board_pts_raw(3, :), 'r.');
       plot3(lidar_board_pts(1, :), lidar_board_pts(2, :), lidar_board_pts(3, :), 'r*');
       plot3(lidar_board_edge_pts(1, :), lidar_board_edge_pts(2, :), lidar_board_edge_pts(3, :), 'bo', 'MarkerSize', 10);
+      title(pcd_list(idx).name);
       hold off;
       axis equal;
       pcd_list(idx).name
-      close(fig);
+%       close(fig);
     end
     debug_flag = 0;
 

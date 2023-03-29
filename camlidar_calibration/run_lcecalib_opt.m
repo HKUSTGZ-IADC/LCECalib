@@ -108,6 +108,7 @@ function run_lcecalib_opt(all_iterations, edge_iterations, start_frame, end_fram
   T_est_best = T_ini_best;
   min_error = 1e5;
   for frame_num = start_frame : min(length(all_cam_board_plane_coeff), end_frame)
+    sprintf("frame_num: %d", frame_num)
     r_errs = zeros(1, all_iterations); 
     t_errs = zeros(1, all_iterations);
     mp_errs = zeros(1, all_iterations);
