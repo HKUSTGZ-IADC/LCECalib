@@ -56,7 +56,7 @@ function run_lcecalib_fe()
 
     %% image: feature extraction
     [img_undist, camParams] = undistort_image(img_raw, K, D);
-    if (contains(data_type, 'hkustgz_data_handheld_20230323'))
+    if (contains(data_type, 'hkustgz_data_handheld_202303'))
       img_undist(1:500, :, :) = 0;
     end
     [imagePoints, boardSize] = detectCheckerboardPoints(img_undist);
@@ -121,10 +121,10 @@ function run_lcecalib_fe()
 
     debug_flag = 0;
     if debug_flag
+      fig = figure; 
       worldPx = worldpts_to_cam(worldPoints', T(1:3, 1:3), T(1:3, 4), K);
       pc_corner_px = worldpts_to_cam(cam_board_corners, eye(3, 3), zeros(3, 1), K);
       pc_corner_px(:, size(pc_corner_px, 2) + 1) = pc_corner_px(:, 1);       
-      fig = figure(1); 
       subplot(121); imshow(img_raw);
       subplot(122); imshow(img_undist);
       hold on;
@@ -169,9 +169,10 @@ function run_lcecalib_fe()
         R_ini = eye(3); 
       else
         % frame_cam01
-        R_ini = [0.0000         0    1.0000;
-                 0    1.0000         0;
-                -1.0000         0    0.0000 ];
+%         R_ini = [0.0000         0    1.0000;
+%                  0    1.0000         0;
+%                 -1.0000         0    0.0000 ];
+        R_ini = eye(3);
       end
       roi = computeLiDARROI(R_ini * cam_board_corners, 1.0);
       indices = findPointsInROI(pc, roi);

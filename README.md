@@ -73,6 +73,15 @@ You can collect data by yourself for practical sensors, two tricks are provided:
 
 * Please set correct ```data_type``` and ```data_option``` in ```run_lcecalib_qpep_other_data.m```
 * Please set the flag ```save_result_flag``` and ```plot_result_flag``` in ```run_lcecalib_qpep_other_data.m```
+* Follow the ```params_to_matlab.m``` to create the ```params.mat``` for configuration
+  * ```num_H, num_W```: the number of grids at the short side and long side
+  * ```borW, borH```: the width [m] (larger) and height [m] (smaller) of the checkerboard
+  * ```pattern_size```: the size [m] of each grid
+  * ``num_data``: the number of data pairs (image + point cloud) used in calibration
+  * ```imageWidth, image_Height```: the pixel width and height of each image
+  * ```use_edge_flag, use_planar_flag```: set ```1``` or ```0``` whether to use edge and planar constraints or not
+  * ```edge_weight, planar_weight```: weights of edge and planar constraints in optimization
+
 * Run ```run_lcecalib_qpep_other_data.m```
 
 ### Calibration using the baseline method
@@ -122,10 +131,11 @@ If you find our code or paper useful, please cite
 
 ```
 @article{jiao2023lce,
-  title={LCE-Calib: Automatic LiDAR-Frame/Event Camera Extrinsic Calibration With A Globally Optimal Solution},
+  title={LCE-Calib: Automatic LiDAR-Frame/Event Camera Extrinsic Calibration With a Globally Optimal Solution},
   author={Jiao, Jianhao and Chen, Feiyi and Wei, Hexiang and Wu, Jin and Liu, Ming},
-  journal={arXiv preprint arXiv:2303.09825},
-  year={2023}
+  journal={IEEE/ASME Transactions on Mechatronics},
+  year={2023},
+  publisher={IEEE}
 }
 ```
 
