@@ -47,7 +47,7 @@ nvidia-docker run -v <your_path>:<docker_path> --it --name e2vid iidcramlab/e2vi
 
 ## Dataset Preparation
 
-We provide data used in our paper here: http://gofile.me/72EEc/OK6HMnQeH. Please download and store them according to below folder structure
+We provide data used in our paper from the [Google Drive](https://drive.google.com/drive/folders/161YOn4_LPsbwxI7y-S98yQmc9eXx-4Tb?usp=sharing). Please download and store them according to below folder structure
 
 * simu_data_bias/
   * simu_data_1 - simu_data_10: simulated data at the noise levels from 1-10
